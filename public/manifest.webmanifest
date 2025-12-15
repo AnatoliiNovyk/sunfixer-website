@@ -1,0 +1,18 @@
+{
+  "name": "SUNFIXER — Neurofunk Architect",
+  "short_name": "SUNFIXER",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "description": "Неоновий лендінг + Firebase CMS для SUNFIXER.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

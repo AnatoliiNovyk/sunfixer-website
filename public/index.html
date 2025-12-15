@@ -12,6 +12,7 @@
   <meta property="og:image" content="https://sunfixer.pp.ua/og-image.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#0a0a0f" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -1067,6 +1068,12 @@
     setupRevealObserver();
     setupSmoothNav();
     initFirebaseAndData();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('SW registration failed', err));
+      });
+    }
   </script>
 </body>
 </html>
