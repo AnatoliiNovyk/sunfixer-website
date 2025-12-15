@@ -43,6 +43,8 @@
     @keyframes glitch { 0% { clip-path: inset(0 0 0 0); } 20% { clip-path: inset(10% 0 15% 0); } 40% { clip-path: inset(5% 0 30% 0); } 60% { clip-path: inset(25% 0 10% 0); } 80% { clip-path: inset(15% 0 25% 0); } 100% { clip-path: inset(0 0 0 0); } }
     #modalOverlay { display: none; }
     #modalOverlay.active { display: flex; }
+    .dropzone { border: 1px dashed rgba(255,255,255,0.25); border-radius: 0.75rem; padding: 0.75rem; text-align: center; color: #cbd5e1; cursor: pointer; background: rgba(255,255,255,0.03); }
+    .dropzone.dragover { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,0.08); }
   </style>
 </head>
 <body class="min-h-screen bg-cyberBg text-slate-100">
@@ -70,6 +72,140 @@
       <button id="adminToggle" class="px-3 py-2 rounded-md border border-neonPurple text-neonPurple hover:bg-neonPurple hover:text-cyberBg transition font-semibold text-sm">⚙️ Admin</button>
     </div>
   </header>
+
+  <section id="adminPanel" class="hidden max-w-6xl mx-auto px-4 py-6">
+    <div class="glass rounded-xl border border-white/10 p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Адмін режим</p>
+          <h3 class="text-2xl font-display">Керування контентом</h3>
+          <p id="adminStatus" class="text-sm text-slate-400">Увійдіть через Google, щоб керувати даними.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="adminSignOut" class="hidden px-3 py-2 rounded-md border border-white/20 text-slate-200 hover:border-neonCyan text-sm">Вийти</button>
+        </div>
+      </div>
+
+      <div id="adminNotice" class="text-sm text-amber-300 hidden">Ви увійшли, але не маєте прав адміна (UID не у списку). Зверніться до власника проєкту.</div>
+      <div id="adminNoFirebase" class="text-sm text-amber-300 hidden">Firebase config не заповнено. Адмін-режим вимкнено до додавання ключів.</div>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <form id="formArtist" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Artist info</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Зберегти</button>
+          </div>
+          <input name="tagline" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Tagline" />
+          <textarea name="bio" rows="3" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Bio"></textarea>
+          <input name="email" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Email для букінгу" />
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <input name="instagram" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Instagram" />
+            <input name="youtube" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube" />
+            <input name="soundcloud" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="SoundCloud" />
+            <input name="spotify" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Spotify" />
+          </div>
+          <label class="block text-sm text-slate-300">Hero image</label>
+          <div class="dropzone" data-drop-target="artistHero">Перетягніть зображення або натисніть
+            <input type="file" class="hidden" data-file-input="artistHero" accept="image/*" />
+          </div>
+        </form>
+
+        <form id="formRelease" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Releases</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
+          </div>
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <div class="grid grid-cols-2 gap-2">
+            <input name="date" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Дата" />
+            <select name="type" class="bg-black/40 border border-white/10 rounded-md px-3 py-2">
+              <option value="single">Single</option>
+              <option value="album">Album</option>
+              <option value="remix">Remix</option>
+            </select>
+          </div>
+          <input name="spotify" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Spotify embed URL" />
+          <label class="block text-sm text-slate-300">Обкладинка</label>
+          <div class="dropzone" data-drop-target="releaseCover">Перетягніть обкладинку або натисніть
+            <input type="file" class="hidden" data-file-input="releaseCover" accept="image/*" />
+          </div>
+        </form>
+
+        <form id="formVideo" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Videos</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
+          </div>
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <input name="youtubeId" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube ID" required />
+          <label class="block text-sm text-slate-300">Прев'ю</label>
+          <div class="dropzone" data-drop-target="videoThumb">Перетягніть прев'ю або натисніть
+            <input type="file" class="hidden" data-file-input="videoThumb" accept="image/*" />
+          </div>
+        </form>
+
+        <form id="formPhoto" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Photos</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
+          </div>
+          <input name="alt" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Опис / alt" />
+          <input name="category" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Категорія" />
+          <label class="block text-sm text-slate-300">Зображення</label>
+          <div class="dropzone" data-drop-target="photoImage">Перетягніть фото або натисніть
+            <input type="file" class="hidden" data-file-input="photoImage" accept="image/*" />
+          </div>
+        </form>
+
+        <form id="formEvent" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Events</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
+          </div>
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <div class="grid grid-cols-2 gap-2">
+            <input name="date" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Дата" />
+            <input name="location" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Локація" />
+          </div>
+          <input name="ticketUrl" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання на квитки" />
+          <label class="inline-flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" name="past" class="accent-neonPurple" /> Минула подія
+          </label>
+        </form>
+
+        <form id="formLabel" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Label (CORE64)</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Зберегти</button>
+          </div>
+          <input name="name" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" />
+          <textarea name="desc" rows="3" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Опис"></textarea>
+          <label class="block text-sm text-slate-300">Лого</label>
+          <div class="dropzone" data-drop-target="labelLogo">Перетягніть лого або натисніть
+            <input type="file" class="hidden" data-file-input="labelLogo" accept="image/*" />
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-sm">
+            <input name="link1" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання 1" />
+            <input name="link2" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання 2" />
+            <input name="link3" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання 3" />
+          </div>
+        </form>
+
+        <form id="formPartner" class="glass rounded-lg border border-white/10 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-display text-lg">Partners</h4>
+            <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
+          </div>
+          <input name="name" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <input name="url" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="URL" />
+          <label class="block text-sm text-slate-300">Лого</label>
+          <div class="dropzone" data-drop-target="partnerLogo">Перетягніть лого або натисніть
+            <input type="file" class="hidden" data-file-input="partnerLogo" accept="image/*" />
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
 
   <main class="max-w-6xl mx-auto px-4 pb-20">
     <section id="hero" class="pt-16 pb-12 flex flex-col gap-8">
@@ -202,6 +338,7 @@
     const modalClose = document.getElementById('modalClose');
 
     const modalRegistry = { release: {}, video: {}, photo: {} };
+    const uploadQueue = {};
     const state = {
       artistInfo: null,
       releases: [],
@@ -211,6 +348,13 @@
       label: null,
       partners: [],
       releaseFilter: 'all',
+      user: null,
+      isAdmin: false,
+      firebaseReady: false,
+      app: null,
+      db: null,
+      storage: null,
+      auth: null,
     };
 
     const heroTitleEl = document.getElementById('heroTitle');
@@ -222,6 +366,13 @@
     const labelInfo = document.getElementById('labelInfo');
     const partnersGrid = document.getElementById('partnersGrid');
     const contactPanel = document.getElementById('contactPanel');
+
+    const adminPanel = document.getElementById('adminPanel');
+    const adminStatus = document.getElementById('adminStatus');
+    const adminNotice = document.getElementById('adminNotice');
+    const adminNoFirebase = document.getElementById('adminNoFirebase');
+    const adminSignOut = document.getElementById('adminSignOut');
+    const adminToggleBtn = document.getElementById('adminToggle');
 
     function openModal(html) {
       modalContent.innerHTML = html;
@@ -288,6 +439,7 @@
         card.className = 'glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer flex flex-col gap-3';
         card.setAttribute('data-modal-type', 'release');
         card.setAttribute('data-modal-id', rel.id);
+        const adminActions = state.isAdmin ? `<button data-delete="releases" data-id="${rel.id}" class="text-xs text-rose-300 hover:text-white">Видалити</button>` : '';
         card.innerHTML = `
           <div class="aspect-square bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 rounded-lg mb-2 overflow-hidden">
             ${rel.coverUrl ? `<img src="${rel.coverUrl}" alt="${rel.title}" class="w-full h-full object-cover" loading="lazy" />` : ''}
@@ -299,6 +451,7 @@
             </div>
             <span class="text-[10px] uppercase tracking-wide text-neonCyan">${rel.type ?? 'release'}</span>
           </div>
+          ${adminActions}
         `;
         registerModal('release', rel.id, { title: rel.title, embed: rel.embedHtml });
         discographyGrid.appendChild(card);
@@ -317,12 +470,14 @@
         card.className = 'glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer flex flex-col';
         card.setAttribute('data-modal-type', 'video');
         card.setAttribute('data-modal-id', v.id);
+        const adminActions = state.isAdmin ? `<button data-delete="videos" data-id="${v.id}" class="text-xs text-rose-300 hover:text-white m-3">Видалити</button>` : '';
         card.innerHTML = `
           <div class="aspect-video bg-gradient-to-br from-neonCyan/30 to-neonPurple/30 flex items-center justify-center text-slate-300">
             ${v.thumbnail ? `<img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover" loading="lazy" />` : 'YouTube прев\'ю'}
           </div>
-          <div class="p-3">
+          <div class="p-3 flex items-center justify-between">
             <h3 class="text-lg font-display">${v.title}</h3>
+            ${adminActions}
           </div>
         `;
         registerModal('video', v.id, { title: v.title, youtubeId: v.youtubeId });
@@ -339,11 +494,12 @@
       }
       state.photos.forEach((p) => {
         const card = document.createElement('div');
-        card.className = 'glass rounded-lg overflow-hidden bg-gradient-to-br from-neonPurple/25 to-neonCyan/20 cursor-pointer';
+        card.className = 'glass rounded-lg overflow-hidden bg-gradient-to-br from-neonPurple/25 to-neonCyan/20 cursor-pointer relative';
         card.style.minHeight = '180px';
         card.setAttribute('data-modal-type', 'photo');
         card.setAttribute('data-modal-id', p.id);
-        card.innerHTML = p.url ? `<img src="${p.url}" alt="${p.alt ?? ''}" class="w-full h-full object-cover" loading="lazy" />` : '';
+        card.innerHTML = `${p.url ? `<img src="${p.url}" alt="${p.alt ?? ''}" class="w-full h-full object-cover" loading="lazy" />` : ''}
+          ${state.isAdmin ? `<button data-delete="photos" data-id="${p.id}" class="absolute top-2 right-2 text-xs bg-black/50 px-2 py-1 rounded text-rose-200">✕</button>` : ''}`;
         registerModal('photo', p.id, { title: p.alt, url: p.url });
         photosGrid.appendChild(card);
       });
@@ -360,12 +516,16 @@
       sorted.forEach((ev) => {
         const row = document.createElement('div');
         row.className = 'glass rounded-lg p-4 border border-white/10 flex items-center justify-between';
+        const adminActions = state.isAdmin ? `<button data-delete="events" data-id="${ev.id}" class="text-xs text-rose-300 hover:text-white">Видалити</button>` : '';
         row.innerHTML = `
           <div>
             <p class="text-sm text-neonCyan">${ev.date ?? ''} — ${ev.location ?? ''}</p>
             <p class="text-lg font-semibold">${ev.title}</p>
           </div>
-          ${ev.ticketUrl ? `<a class="text-sm text-neonPurple hover:text-white" href="${ev.ticketUrl}" target="_blank" rel="noreferrer">Квитки</a>` : '<span class="text-xs text-slate-500">info soon</span>'}
+          <div class="flex items-center gap-3">
+            ${ev.ticketUrl ? `<a class="text-sm text-neonPurple hover:text-white" href="${ev.ticketUrl}" target="_blank" rel="noreferrer">Квитки</a>` : '<span class="text-xs text-slate-500">info soon</span>'}
+            ${adminActions}
+          </div>
         `;
         eventsList.appendChild(row);
       });
@@ -399,8 +559,9 @@
       }
       state.partners.forEach((p) => {
         const card = document.createElement('div');
-        card.className = 'glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition flex items-center justify-center min-h-[96px]';
-        card.innerHTML = p.logo ? `<img src="${p.logo}" alt="${p.name}" class="max-h-12 mx-auto" loading="lazy" />` : p.name;
+        card.className = 'glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition flex items-center justify-center min-h-[96px] relative';
+        card.innerHTML = `${p.logo ? `<img src="${p.logo}" alt="${p.name}" class="max-h-12 mx-auto" loading="lazy" />` : p.name}
+          ${state.isAdmin ? `<button data-delete="partners" data-id="${p.id}" class="absolute top-2 right-2 text-xs bg-black/50 px-2 py-1 rounded text-rose-200">✕</button>` : ''}`;
         partnersGrid.appendChild(card);
       });
     }
@@ -443,6 +604,268 @@
       }
     }
 
+    function updateAdminUI() {
+      const panelVisible = state.isAdmin && state.firebaseReady;
+      adminPanel.classList.toggle('hidden', !panelVisible);
+      adminSignOut.classList.toggle('hidden', !state.user);
+      adminNotice.classList.toggle('hidden', !(state.user && !state.isAdmin));
+      adminNoFirebase.classList.toggle('hidden', state.firebaseReady);
+      if (!state.firebaseReady) {
+        adminStatus.textContent = 'Адмін-режим недоступний без Firebase config.';
+        return;
+      }
+      if (state.user) {
+        adminStatus.textContent = state.isAdmin
+          ? `Увійшли як ${state.user.email || state.user.uid}. Права адміна надано.`
+          : `Увійшли як ${state.user.email || state.user.uid}. Немає прав адміна.`;
+      } else {
+        adminStatus.textContent = 'Увійдіть через Google, щоб керувати даними.';
+      }
+    }
+
+    function requireAdmin() {
+      if (!state.firebaseReady) {
+        alert('Firebase не налаштовано. Додайте конфіг.');
+        return false;
+      }
+      if (!state.user) {
+        alert('Спершу увійдіть як адмін.');
+        return false;
+      }
+      if (!state.isAdmin) {
+        alert('Немає прав адміна (UID не в ADMIN_UIDS).');
+        return false;
+      }
+      return true;
+    }
+
+    function bindDropzones() {
+      document.querySelectorAll('.dropzone').forEach((dz) => {
+        const key = dz.getAttribute('data-drop-target');
+        const input = dz.querySelector('input[type="file"]');
+        dz.addEventListener('click', () => input?.click());
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dz.classList.remove('dragover');
+          if (e.dataTransfer.files.length) {
+            uploadQueue[key] = e.dataTransfer.files[0];
+            dz.textContent = `Обрано: ${uploadQueue[key].name}`;
+          }
+        });
+        input?.addEventListener('change', (e) => {
+          if (e.target.files.length) {
+            uploadQueue[key] = e.target.files[0];
+            dz.textContent = `Обрано: ${uploadQueue[key].name}`;
+          }
+        });
+      });
+    }
+
+    async function uploadFromQueue(key, prefix) {
+      if (!uploadQueue[key] || !state.storage) return { downloadURL: null, gsUrl: null };
+      const file = uploadQueue[key];
+      const refPath = `${prefix}/${Date.now()}_${file.name}`;
+      const ref = state.storage.ref().child(refPath);
+      await ref.put(file);
+      const downloadURL = await ref.getDownloadURL();
+      const gsUrl = firebaseConfig.storageBucket ? `gs://${firebaseConfig.storageBucket}/${refPath}` : refPath;
+      uploadQueue[key] = null;
+      return { downloadURL, gsUrl };
+    }
+
+    async function handleArtistSave(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      const socials = ['instagram', 'youtube', 'soundcloud', 'spotify'].reduce((acc, key) => {
+        const val = fd.get(key);
+        if (val) acc[key] = val;
+        return acc;
+      }, {});
+      let heroImageGs = null;
+      if (uploadQueue.artistHero) {
+        const upload = await uploadFromQueue('artistHero', 'artist');
+        heroImageGs = upload.gsUrl;
+      }
+      const payload = {
+        tagline: fd.get('tagline') || '',
+        bio: fd.get('bio') || '',
+        email: fd.get('email') || '',
+        socials,
+      };
+      if (heroImageGs) payload.hero_image = heroImageGs;
+      await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
+      alert('Збережено artist_info');
+    }
+
+    async function handleReleaseAdd(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      let cover_gs_url = null;
+      if (uploadQueue.releaseCover) {
+        const upload = await uploadFromQueue('releaseCover', 'releases');
+        cover_gs_url = upload.gsUrl;
+      }
+      const payload = {
+        title: fd.get('title'),
+        date: fd.get('date'),
+        type: fd.get('type') || 'single',
+        cover_gs_url,
+        platforms: { spotify: fd.get('spotify') || '' },
+      };
+      await state.db.collection('releases').add(payload);
+      e.target.reset();
+      alert('Реліз додано');
+    }
+
+    async function handleVideoAdd(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      let thumbnail_gs_url = null;
+      if (uploadQueue.videoThumb) {
+        const upload = await uploadFromQueue('videoThumb', 'videos');
+        thumbnail_gs_url = upload.gsUrl;
+      }
+      const payload = {
+        title: fd.get('title'),
+        youtubeId: fd.get('youtubeId'),
+        thumbnail_gs_url,
+      };
+      await state.db.collection('videos').add(payload);
+      e.target.reset();
+      alert('Відео додано');
+    }
+
+    async function handlePhotoAdd(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      let image_gs_url = null;
+      if (uploadQueue.photoImage) {
+        const upload = await uploadFromQueue('photoImage', 'photos');
+        image_gs_url = upload.gsUrl;
+      }
+      const payload = {
+        alt: fd.get('alt') || '',
+        category: fd.get('category') || '',
+        image_gs_url,
+      };
+      await state.db.collection('photos').add(payload);
+      e.target.reset();
+      alert('Фото додано');
+    }
+
+    async function handleEventAdd(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      const payload = {
+        title: fd.get('title'),
+        date: fd.get('date'),
+        location: fd.get('location'),
+        ticketUrl: fd.get('ticketUrl'),
+        past: fd.get('past') === 'on',
+      };
+      await state.db.collection('events').add(payload);
+      e.target.reset();
+      alert('Подію додано');
+    }
+
+    async function handleLabelSave(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      let logo = null;
+      if (uploadQueue.labelLogo) {
+        const upload = await uploadFromQueue('labelLogo', 'label');
+        logo = upload.gsUrl;
+      }
+      const links = [fd.get('link1'), fd.get('link2'), fd.get('link3')]
+        .filter(Boolean)
+        .map((url, idx) => ({ name: `Link ${idx + 1}`, url }));
+      const payload = {
+        name: fd.get('name') || 'CORE64 RECORDS',
+        desc: fd.get('desc') || '',
+        links,
+      };
+      if (logo) payload.logo = logo;
+      await state.db.collection('label').doc('core64').set(payload, { merge: true });
+      alert('Label збережено');
+    }
+
+    async function handlePartnerAdd(e) {
+      e.preventDefault();
+      if (!requireAdmin()) return;
+      const fd = new FormData(e.target);
+      let logo_gs_url = null;
+      if (uploadQueue.partnerLogo) {
+        const upload = await uploadFromQueue('partnerLogo', 'partners');
+        logo_gs_url = upload.gsUrl;
+      }
+      const payload = {
+        name: fd.get('name'),
+        url: fd.get('url'),
+        logo_gs_url,
+      };
+      await state.db.collection('partners').add(payload);
+      e.target.reset();
+      alert('Партнера додано');
+    }
+
+    function setupAdminForms() {
+      document.getElementById('formArtist')?.addEventListener('submit', handleArtistSave);
+      document.getElementById('formRelease')?.addEventListener('submit', handleReleaseAdd);
+      document.getElementById('formVideo')?.addEventListener('submit', handleVideoAdd);
+      document.getElementById('formPhoto')?.addEventListener('submit', handlePhotoAdd);
+      document.getElementById('formEvent')?.addEventListener('submit', handleEventAdd);
+      document.getElementById('formLabel')?.addEventListener('submit', handleLabelSave);
+      document.getElementById('formPartner')?.addEventListener('submit', handlePartnerAdd);
+      bindDropzones();
+    }
+
+    function setupDeleteHandler() {
+      document.body.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-delete]');
+        if (!btn) return;
+        if (!requireAdmin()) return;
+        const collection = btn.getAttribute('data-delete');
+        const id = btn.getAttribute('data-id');
+        if (!collection || !id) return;
+        if (!confirm('Видалити елемент?')) return;
+        await state.db.collection(collection).doc(id).delete();
+      });
+    }
+
+    function setupAuth() {
+      if (!state.auth) return;
+      const provider = new firebase.auth.GoogleAuthProvider();
+      state.auth.onAuthStateChanged((user) => {
+        state.user = user;
+        state.isAdmin = !!(user && ADMIN_UIDS.includes(user.uid));
+        updateAdminUI();
+      });
+      adminToggleBtn.addEventListener('click', () => {
+        if (!state.firebaseReady) {
+          adminNoFirebase.classList.remove('hidden');
+          return;
+        }
+        if (!state.user) {
+          state.auth.signInWithPopup(provider);
+          return;
+        }
+        if (!state.isAdmin) {
+          adminNotice.classList.remove('hidden');
+          return;
+        }
+        adminPanel.classList.toggle('hidden');
+      });
+      adminSignOut.addEventListener('click', () => state.auth.signOut());
+    }
+
     async function initFirebaseAndData() {
       const hasConfig = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY';
       if (!hasConfig) {
@@ -454,6 +877,14 @@
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(app);
         const storage = firebase.storage(app);
+        const auth = firebase.auth(app);
+        state.app = app;
+        state.db = db;
+        state.storage = storage;
+        state.auth = auth;
+        state.firebaseReady = true;
+        updateAdminUI();
+        setupAuth();
 
         db.collection('artist_info').limit(1).onSnapshot((snap) => {
           snap.forEach((doc) => {
@@ -585,6 +1016,9 @@
     });
 
     renderAll();
+    setupAdminForms();
+    setupDeleteHandler();
+    updateAdminUI();
     initFirebaseAndData();
   </script>
 </body>
