@@ -352,6 +352,15 @@
       appId: 'YOUR_APP_ID',
     };
 
+    // Firestore Rules (довідка):
+    // rules_version = '2';
+    // service cloud.firestore {
+    //   match /{document=**} {
+    //     allow read: if true;
+    //     allow write: if request.auth != null && request.auth.uid in ['YOUR_ADMIN_UID'];
+    //   }
+    // }
+
     const ADMIN_UIDS = ['YOUR_ADMIN_UID'];
 
     const modalOverlay = document.getElementById('modalOverlay');

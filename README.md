@@ -12,6 +12,17 @@
 3. У константі `ADMIN_UIDS` залиш UID(и) адмінів.
 4. Налаштуй Firestore Rules (приклад у коді): дозволяй write лише для цих UID.
 
+### Firestore Rules (приклад)
+```
+rules_version = '2';
+service cloud.firestore {
+	match /{document=**} {
+		allow read: if true;
+		allow write: if request.auth != null && request.auth.uid in ['YOUR_ADMIN_UID'];
+	}
+}
+```
+
 ## Адмін-режим
 - Кнопка «⚙️ Admin» у хедері.
 - Вхід через Google; UI-гейтинг по `ADMIN_UIDS` (rules — джерело істини).
