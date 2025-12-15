@@ -105,7 +105,7 @@
         </div>
       </header>
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <article class="glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
+        <article data-modal-type="release" data-modal-id="demo-release" class="glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
           <div class="aspect-square bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 rounded-lg mb-3"></div>
           <h3 class="text-xl font-display">Placeholder Release</h3>
           <p class="text-sm text-slate-400">Демо-картка для майбутніх релізів з Firestore.</p>
@@ -119,7 +119,7 @@
         <h2 class="text-3xl font-display">Videos</h2>
       </header>
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <article class="glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
+        <article data-modal-type="video" data-modal-id="demo-video" class="glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
           <div class="aspect-video bg-gradient-to-br from-neonCyan/30 to-neonPurple/30 flex items-center justify-center text-slate-300">YouTube прев'ю</div>
         </article>
       </div>
@@ -131,9 +131,9 @@
         <h2 class="text-3xl font-display">Photos</h2>
       </header>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="glass rounded-lg h-48 bg-gradient-to-br from-neonPurple/25 to-neonCyan/20"></div>
-        <div class="glass rounded-lg h-64 bg-gradient-to-br from-neonCyan/25 to-neonPurple/20"></div>
-        <div class="glass rounded-lg h-40 bg-gradient-to-br from-acidGreen/20 to-neonPurple/15"></div>
+        <div data-modal-type="photo" data-modal-id="demo-photo-1" class="glass rounded-lg h-48 bg-gradient-to-br from-neonPurple/25 to-neonCyan/20 cursor-pointer"></div>
+        <div data-modal-type="photo" data-modal-id="demo-photo-2" class="glass rounded-lg h-64 bg-gradient-to-br from-neonCyan/25 to-neonPurple/20 cursor-pointer"></div>
+        <div data-modal-type="photo" data-modal-id="demo-photo-3" class="glass rounded-lg h-40 bg-gradient-to-br from-acidGreen/20 to-neonPurple/15 cursor-pointer"></div>
       </div>
     </section>
 
@@ -230,6 +230,26 @@
     const modalContent = document.getElementById('modalContent');
     const modalClose = document.getElementById('modalClose');
 
+    const demoData = {
+      release: {
+        'demo-release': {
+          title: 'Placeholder Release',
+          embed: `<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/7ouMYWpwJ422jRcDASZB7P?utm_source=generator" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+        }
+      },
+      video: {
+        'demo-video': {
+          title: 'Placeholder Video',
+          embed: `<div class="aspect-video w-full"><iframe class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`
+        }
+      },
+      photo: {
+        'demo-photo-1': { title: 'Live shot', url: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80' },
+        'demo-photo-2': { title: 'Studio lights', url: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?auto=format&fit=crop&w=1200&q=80' },
+        'demo-photo-3': { title: 'City night', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80' }
+      }
+    };
+
     function openModal(html) {
       modalContent.innerHTML = html;
       modalOverlay.classList.add('active');
@@ -245,6 +265,28 @@
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
+    });
+
+    function buildModal(type, id) {
+      if (!demoData[type] || !demoData[type][id]) {
+        return '<div class="text-slate-200">Контент не знайдено.</div>';
+      }
+      const item = demoData[type][id];
+      if (type === 'release' || type === 'video') {
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3>${item.embed}</div>`;
+      }
+      if (type === 'photo') {
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3><img src="${item.url}" alt="${item.title}" class="w-full rounded-lg" loading="lazy" /></div>`;
+      }
+      return '<div class="text-slate-200">Невідомий тип контенту.</div>';
+    }
+
+    document.querySelectorAll('[data-modal-type]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const type = el.getAttribute('data-modal-type');
+        const id = el.getAttribute('data-modal-id');
+        openModal(buildModal(type, id));
+      });
     });
   </script>
 </body>
