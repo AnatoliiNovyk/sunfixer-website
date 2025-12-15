@@ -12,6 +12,10 @@
 - Node (якщо є npm): `npx serve public -l 8080`.
 Service Worker працює лише по `http://localhost` або HTTPS, тому відкриття напряму з файлової системи не підійде.
 
+Швидкий старт скриптами:
+- Windows: `./scripts/start-server.ps1` (PowerShell), спробує Python або `npx serve`.
+- Unix/macOS: `./scripts/start-server.sh` (bash), спробує Python або `npx serve`.
+
 ## Підключення реальної Firebase
 1. Створи проєкт у Firebase.
 2. У `public/index.html` заповни `firebaseConfig` (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
