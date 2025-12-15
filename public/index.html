@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUNFIXER — Neurofunk Architect</title>
+  <meta name="description" content="SUNFIXER — Neurofunk/Dark DnB артист. Офіційний лендінг та CMS." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Orbitron', 'sans-serif'],
+            body: ['Rajdhani', 'sans-serif'],
+          },
+          colors: {
+            cyberBg: '#0a0a0f',
+            neonPurple: '#8b5cf6',
+            neonCyan: '#06b6d4',
+            acidGreen: '#10b981',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    body { background: #0a0a0f; color: #e5e7eb; font-family: 'Rajdhani', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(12px); }
+    .neon-text { text-shadow: 0 0 12px rgba(139, 92, 246, 0.7), 0 0 24px rgba(6, 182, 212, 0.55); }
+    .glitch { position: relative; }
+    .glitch::before, .glitch::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; overflow: hidden; clip-path: inset(0 0 0 0); } 
+    .glitch::before { color: #8b5cf6; transform: translate(2px, -2px); mix-blend-mode: screen; opacity: 0.7; animation: glitch 2s infinite; }
+    .glitch::after { color: #06b6d4; transform: translate(-2px, 2px); mix-blend-mode: screen; opacity: 0.7; animation: glitch 1.8s infinite; }
+    @keyframes glitch { 0% { clip-path: inset(0 0 0 0); } 20% { clip-path: inset(10% 0 15% 0); } 40% { clip-path: inset(5% 0 30% 0); } 60% { clip-path: inset(25% 0 10% 0); } 80% { clip-path: inset(15% 0 25% 0); } 100% { clip-path: inset(0 0 0 0); } }
+    #modalOverlay { display: none; }
+    #modalOverlay.active { display: flex; }
+  </style>
+</head>
+<body class="min-h-screen bg-cyberBg text-slate-100">
+  <div class="fixed inset-0 pointer-events-none opacity-40" aria-hidden="true">
+    <div class="absolute -left-10 top-10 h-48 w-48 rounded-full bg-neonPurple blur-3xl"></div>
+    <div class="absolute right-10 bottom-10 h-48 w-48 rounded-full bg-neonCyan blur-3xl"></div>
+  </div>
+
+  <header class="sticky top-0 z-20 backdrop-blur bg-cyberBg/70 border-b border-white/10">
+    <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-3">
+        <span class="text-neonPurple text-2xl font-bold font-display glitch" data-text="SUNFIXER">SUNFIXER</span>
+        <span class="text-sm text-slate-400">Neurofunk Architect</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-4 text-sm uppercase tracking-wide">
+        <a class="hover:text-neonPurple" href="#hero">About</a>
+        <a class="hover:text-neonPurple" href="#discography">Discography</a>
+        <a class="hover:text-neonPurple" href="#videos">Videos</a>
+        <a class="hover:text-neonPurple" href="#photos">Photos</a>
+        <a class="hover:text-neonPurple" href="#events">Events</a>
+        <a class="hover:text-neonPurple" href="#label">Label</a>
+        <a class="hover:text-neonPurple" href="#partners">Partners</a>
+        <a class="hover:text-neonPurple" href="#contact">Contact</a>
+      </nav>
+      <button id="adminToggle" class="px-3 py-2 rounded-md border border-neonPurple text-neonPurple hover:bg-neonPurple hover:text-cyberBg transition font-semibold text-sm">⚙️ Admin</button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <section id="hero" class="pt-16 pb-12 flex flex-col gap-8">
+      <div class="flex flex-col md:flex-row items-center gap-8">
+        <div class="flex-1 space-y-4">
+          <p class="text-neonCyan uppercase tracking-[0.3em] text-xs">Neurofunk / Dark DnB</p>
+          <h1 class="text-4xl md:text-5xl font-display neon-text">SUNFIXER — Shaping dark energy of sound</h1>
+          <p class="text-lg text-slate-300 max-w-2xl">Створи електрифікуючу подорож крізь кіберпанк-саунд. Цей лендінг і CMS — єдина точка правди для релізів, відео, фото та лайв-подій.</p>
+          <div class="flex gap-3">
+            <a href="#discography" class="px-5 py-3 rounded-md bg-neonPurple text-cyberBg font-semibold shadow-lg shadow-neonPurple/30 hover:scale-105 transition">🎧 Слухати зараз</a>
+            <a href="#events" class="px-5 py-3 rounded-md border border-neonCyan text-neonCyan font-semibold hover:bg-neonCyan hover:text-cyberBg transition">Події</a>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="relative glass rounded-2xl overflow-hidden border border-white/10 p-1">
+            <div class="aspect-[4/5] bg-gradient-to-br from-neonPurple/50 via-cyberBg to-neonCyan/50 flex items-center justify-center text-6xl font-display neon-text">SF</div>
+            <div class="absolute inset-x-4 bottom-4 flex items-center justify-between text-xs text-slate-300">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-wave-square text-neonCyan"></i> Live energy</span>
+              <span class="flex items-center gap-2"><i class="fa-solid fa-bolt text-acidGreen"></i> Bass impact</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="discography" class="py-12 space-y-6">
+      <header class="flex items-center justify-between">
+        <div>
+          <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Релізи</p>
+          <h2 class="text-3xl font-display">Discography</h2>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Всі</button>
+          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Albums</button>
+          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Singles</button>
+          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Remixes</button>
+        </div>
+      </header>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <article class="glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
+          <div class="aspect-square bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 rounded-lg mb-3"></div>
+          <h3 class="text-xl font-display">Placeholder Release</h3>
+          <p class="text-sm text-slate-400">Демо-картка для майбутніх релізів з Firestore.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="videos" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Відео</p>
+        <h2 class="text-3xl font-display">Videos</h2>
+      </header>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <article class="glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
+          <div class="aspect-video bg-gradient-to-br from-neonCyan/30 to-neonPurple/30 flex items-center justify-center text-slate-300">YouTube прев'ю</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="photos" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Фото</p>
+        <h2 class="text-3xl font-display">Photos</h2>
+      </header>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="glass rounded-lg h-48 bg-gradient-to-br from-neonPurple/25 to-neonCyan/20"></div>
+        <div class="glass rounded-lg h-64 bg-gradient-to-br from-neonCyan/25 to-neonPurple/20"></div>
+        <div class="glass rounded-lg h-40 bg-gradient-to-br from-acidGreen/20 to-neonPurple/15"></div>
+      </div>
+    </section>
+
+    <section id="events" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Події</p>
+        <h2 class="text-3xl font-display">Events</h2>
+      </header>
+      <div class="space-y-4">
+        <div class="glass rounded-lg p-4 border border-white/10 flex items-center justify-between">
+          <div>
+            <p class="text-sm text-neonCyan">12.03.2025 — Київ</p>
+            <p class="text-lg font-semibold">SUNFIXER LIVE</p>
+          </div>
+          <a class="text-sm text-neonPurple hover:text-white" href="#">Квитки</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="label" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Лейбл</p>
+        <h2 class="text-3xl font-display">CORE64 RECORDS</h2>
+      </header>
+      <div class="glass rounded-xl p-6 border border-white/10 flex flex-col md:flex-row gap-6">
+        <div class="h-24 w-24 rounded-full bg-gradient-to-br from-neonPurple/40 to-neonCyan/30"></div>
+        <div class="space-y-2">
+          <p class="text-slate-300">Офіційний лейбл SUNFIXER. Підтримка експериментальних саунд-дизайнерів та DnB продюсерів.</p>
+          <div class="flex gap-3 text-neonCyan text-sm">
+            <a href="#" class="hover:text-white">Website</a>
+            <a href="#" class="hover:text-white">Instagram</a>
+            <a href="#" class="hover:text-white">Bandcamp</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="partners" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Партнери</p>
+        <h2 class="text-3xl font-display">Partners & Friends</h2>
+      </header>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
+        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
+        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
+      </div>
+    </section>
+
+    <section id="contact" class="py-12 space-y-6">
+      <header>
+        <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Контакт</p>
+        <h2 class="text-3xl font-display">Contact</h2>
+      </header>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <form class="glass rounded-xl p-6 border border-white/10 space-y-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Ім'я</label>
+            <input type="text" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 focus:outline-none focus:border-neonPurple" placeholder="Твоє ім'я" />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Email</label>
+            <input type="email" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 focus:outline-none focus:border-neonCyan" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Повідомлення</label>
+            <textarea rows="4" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 focus:outline-none focus:border-acidGreen" placeholder="Що плануємо?"></textarea>
+          </div>
+          <button type="button" class="w-full py-3 rounded-md bg-neonPurple text-cyberBg font-semibold hover:scale-[1.01] transition">Надіслати</button>
+        </form>
+        <div class="glass rounded-xl p-6 border border-white/10 space-y-3">
+          <p class="text-slate-300">Букінг, колаби, промо: <a class="text-neonCyan hover:text-white" href="mailto:booking@sunfixer.pp.ua">booking@sunfixer.pp.ua</a></p>
+          <div class="flex gap-3 text-neonPurple text-xl">
+            <a href="#" class="hover:text-white"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" class="hover:text-white"><i class="fa-brands fa-youtube"></i></a>
+            <a href="#" class="hover:text-white"><i class="fa-brands fa-soundcloud"></i></a>
+            <a href="#" class="hover:text-white"><i class="fa-brands fa-spotify"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalOverlay" class="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm items-center justify-center px-4">
+    <div class="absolute inset-0" aria-hidden="true"></div>
+    <div class="relative max-w-3xl w-full glass rounded-2xl p-4 border border-white/10">
+      <button id="modalClose" class="absolute top-3 right-3 text-slate-200 hover:text-white" aria-label="Закрити">✕</button>
+      <div id="modalContent" class="text-slate-200">Контент модалки</div>
+    </div>
+  </div>
+
+  <script>
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+
+    function openModal(html) {
+      modalContent.innerHTML = html;
+      modalOverlay.classList.add('active');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>
