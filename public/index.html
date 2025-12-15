@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SUNFIXER — Neurofunk Architect</title>
   <meta name="description" content="SUNFIXER — Neurofunk/Dark DnB артист. Офіційний лендінг та CMS." />
+  <meta property="og:title" content="SUNFIXER — Neurofunk Architect" />
+  <meta property="og:description" content="Неоновий лендінг, релізи, відео, події та CMS на Firebase." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sunfixer.pp.ua" />
+  <meta property="og:image" content="https://sunfixer.pp.ua/og-image.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#0a0a0f" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -32,6 +39,17 @@
     };
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MusicArtist",
+    "name": "SUNFIXER",
+    "genre": ["Neurofunk", "Drum and Bass"],
+    "url": "https://sunfixer.pp.ua",
+    "sameAs": ["https://instagram.com/sunfixer", "https://youtube.com", "https://soundcloud.com", "https://open.spotify.com"],
+    "description": "SUNFIXER — Neurofunk Architect. Official landing with releases, videos, events and CMS on Firebase."
+  }
+  </script>
   <style>
     body { background: #0a0a0f; color: #e5e7eb; font-family: 'Rajdhani', sans-serif; }
     .glass { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(12px); }
@@ -45,6 +63,8 @@
     #modalOverlay.active { display: flex; }
     .dropzone { border: 1px dashed rgba(255,255,255,0.25); border-radius: 0.75rem; padding: 0.75rem; text-align: center; color: #cbd5e1; cursor: pointer; background: rgba(255,255,255,0.03); }
     .dropzone.dragover { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,0.08); }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body class="min-h-screen bg-cyberBg text-slate-100">
@@ -208,7 +228,7 @@
   </section>
 
   <main class="max-w-6xl mx-auto px-4 pb-20">
-    <section id="hero" class="pt-16 pb-12 flex flex-col gap-8">
+    <section id="hero" class="pt-16 pb-12 flex flex-col gap-8 reveal">
       <div class="flex flex-col md:flex-row items-center gap-8">
         <div class="flex-1 space-y-4">
           <p class="text-neonCyan uppercase tracking-[0.3em] text-xs">Neurofunk / Dark DnB</p>
@@ -231,7 +251,7 @@
       </div>
     </section>
 
-    <section id="discography" class="py-12 space-y-6">
+    <section id="discography" class="py-12 space-y-6 reveal">
       <header class="flex items-center justify-between">
         <div>
           <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Релізи</p>
@@ -247,7 +267,7 @@
       <div id="discographyGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
-    <section id="videos" class="py-12 space-y-6">
+    <section id="videos" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Відео</p>
         <h2 class="text-3xl font-display">Videos</h2>
@@ -255,7 +275,7 @@
       <div id="videosGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
-    <section id="photos" class="py-12 space-y-6">
+    <section id="photos" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Фото</p>
         <h2 class="text-3xl font-display">Photos</h2>
@@ -263,7 +283,7 @@
       <div id="photosGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
-    <section id="events" class="py-12 space-y-6">
+    <section id="events" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Події</p>
         <h2 class="text-3xl font-display">Events</h2>
@@ -271,7 +291,7 @@
       <div id="eventsList" class="space-y-4"></div>
     </section>
 
-    <section id="label" class="py-12 space-y-6">
+    <section id="label" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Лейбл</p>
         <h2 class="text-3xl font-display">CORE64 RECORDS</h2>
@@ -279,7 +299,7 @@
       <div id="labelInfo" class="glass rounded-xl p-6 border border-white/10 flex flex-col md:flex-row gap-6"></div>
     </section>
 
-    <section id="partners" class="py-12 space-y-6">
+    <section id="partners" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Партнери</p>
         <h2 class="text-3xl font-display">Partners & Friends</h2>
@@ -287,7 +307,7 @@
       <div id="partnersGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
-    <section id="contact" class="py-12 space-y-6">
+    <section id="contact" class="py-12 space-y-6 reveal">
       <header>
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Контакт</p>
         <h2 class="text-3xl font-display">Contact</h2>
@@ -1015,10 +1035,37 @@
       });
     });
 
+    function setupRevealObserver() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2 });
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+    }
+
+    function setupSmoothNav() {
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          const targetId = link.getAttribute('href');
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+    }
+
     renderAll();
     setupAdminForms();
     setupDeleteHandler();
     updateAdminUI();
+    setupRevealObserver();
+    setupSmoothNav();
     initFirebaseAndData();
   </script>
 </body>
