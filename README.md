@@ -6,6 +6,12 @@
 ## Швидкий старт (мок-дані)
 1. Відкрий `public/index.html` у браузері — без конфігу Firebase підтягуються мок-дані, UI та модалки працюють.
 
+### Локальний http-server для тестів
+Щоб перевірити PWA/Service Worker та уникнути CORS-фолбеків, краще відкрити сторінку через локальний сервер:
+- Python 3: з кореня репо `python -m http.server 8080` і відкрий `http://localhost:8080/public/`.
+- Node (якщо є npm): `npx serve public -l 8080`.
+Service Worker працює лише по `http://localhost` або HTTPS, тому відкриття напряму з файлової системи не підійде.
+
 ## Підключення реальної Firebase
 1. Створи проєкт у Firebase.
 2. У `public/index.html` заповни `firebaseConfig` (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
