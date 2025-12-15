@@ -9,6 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -72,8 +76,8 @@
       <div class="flex flex-col md:flex-row items-center gap-8">
         <div class="flex-1 space-y-4">
           <p class="text-neonCyan uppercase tracking-[0.3em] text-xs">Neurofunk / Dark DnB</p>
-          <h1 class="text-4xl md:text-5xl font-display neon-text">SUNFIXER — Shaping dark energy of sound</h1>
-          <p class="text-lg text-slate-300 max-w-2xl">Створи електрифікуючу подорож крізь кіберпанк-саунд. Цей лендінг і CMS — єдина точка правди для релізів, відео, фото та лайв-подій.</p>
+          <h1 id="heroTitle" class="text-4xl md:text-5xl font-display neon-text">SUNFIXER — Shaping dark energy of sound</h1>
+          <p id="heroBio" class="text-lg text-slate-300 max-w-2xl">Створи електрифікуючу подорож крізь кіберпанк-саунд. Цей лендінг і CMS — єдина точка правди для релізів, відео, фото та лайв-подій.</p>
           <div class="flex gap-3">
             <a href="#discography" class="px-5 py-3 rounded-md bg-neonPurple text-cyberBg font-semibold shadow-lg shadow-neonPurple/30 hover:scale-105 transition">🎧 Слухати зараз</a>
             <a href="#events" class="px-5 py-3 rounded-md border border-neonCyan text-neonCyan font-semibold hover:bg-neonCyan hover:text-cyberBg transition">Події</a>
@@ -98,19 +102,13 @@
           <h2 class="text-3xl font-display">Discography</h2>
         </div>
         <div class="flex items-center gap-2 text-sm">
-          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Всі</button>
-          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Albums</button>
-          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Singles</button>
-          <button class="px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Remixes</button>
+          <button data-filter="all" class="release-filter px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Всі</button>
+          <button data-filter="album" class="release-filter px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Albums</button>
+          <button data-filter="single" class="release-filter px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Singles</button>
+          <button data-filter="remix" class="release-filter px-3 py-1 rounded border border-white/15 hover:border-neonPurple">Remixes</button>
         </div>
       </header>
-      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <article data-modal-type="release" data-modal-id="demo-release" class="glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
-          <div class="aspect-square bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 rounded-lg mb-3"></div>
-          <h3 class="text-xl font-display">Placeholder Release</h3>
-          <p class="text-sm text-slate-400">Демо-картка для майбутніх релізів з Firestore.</p>
-        </article>
-      </div>
+      <div id="discographyGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
     <section id="videos" class="py-12 space-y-6">
@@ -118,11 +116,7 @@
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Відео</p>
         <h2 class="text-3xl font-display">Videos</h2>
       </header>
-      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <article data-modal-type="video" data-modal-id="demo-video" class="glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer">
-          <div class="aspect-video bg-gradient-to-br from-neonCyan/30 to-neonPurple/30 flex items-center justify-center text-slate-300">YouTube прев'ю</div>
-        </article>
-      </div>
+      <div id="videosGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
     <section id="photos" class="py-12 space-y-6">
@@ -130,11 +124,7 @@
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Фото</p>
         <h2 class="text-3xl font-display">Photos</h2>
       </header>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div data-modal-type="photo" data-modal-id="demo-photo-1" class="glass rounded-lg h-48 bg-gradient-to-br from-neonPurple/25 to-neonCyan/20 cursor-pointer"></div>
-        <div data-modal-type="photo" data-modal-id="demo-photo-2" class="glass rounded-lg h-64 bg-gradient-to-br from-neonCyan/25 to-neonPurple/20 cursor-pointer"></div>
-        <div data-modal-type="photo" data-modal-id="demo-photo-3" class="glass rounded-lg h-40 bg-gradient-to-br from-acidGreen/20 to-neonPurple/15 cursor-pointer"></div>
-      </div>
+      <div id="photosGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
     <section id="events" class="py-12 space-y-6">
@@ -142,15 +132,7 @@
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Події</p>
         <h2 class="text-3xl font-display">Events</h2>
       </header>
-      <div class="space-y-4">
-        <div class="glass rounded-lg p-4 border border-white/10 flex items-center justify-between">
-          <div>
-            <p class="text-sm text-neonCyan">12.03.2025 — Київ</p>
-            <p class="text-lg font-semibold">SUNFIXER LIVE</p>
-          </div>
-          <a class="text-sm text-neonPurple hover:text-white" href="#">Квитки</a>
-        </div>
-      </div>
+      <div id="eventsList" class="space-y-4"></div>
     </section>
 
     <section id="label" class="py-12 space-y-6">
@@ -158,17 +140,7 @@
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Лейбл</p>
         <h2 class="text-3xl font-display">CORE64 RECORDS</h2>
       </header>
-      <div class="glass rounded-xl p-6 border border-white/10 flex flex-col md:flex-row gap-6">
-        <div class="h-24 w-24 rounded-full bg-gradient-to-br from-neonPurple/40 to-neonCyan/30"></div>
-        <div class="space-y-2">
-          <p class="text-slate-300">Офіційний лейбл SUNFIXER. Підтримка експериментальних саунд-дизайнерів та DnB продюсерів.</p>
-          <div class="flex gap-3 text-neonCyan text-sm">
-            <a href="#" class="hover:text-white">Website</a>
-            <a href="#" class="hover:text-white">Instagram</a>
-            <a href="#" class="hover:text-white">Bandcamp</a>
-          </div>
-        </div>
-      </div>
+      <div id="labelInfo" class="glass rounded-xl p-6 border border-white/10 flex flex-col md:flex-row gap-6"></div>
     </section>
 
     <section id="partners" class="py-12 space-y-6">
@@ -176,11 +148,7 @@
         <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Партнери</p>
         <h2 class="text-3xl font-display">Partners & Friends</h2>
       </header>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
-        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
-        <div class="glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition">Лого партнера</div>
-      </div>
+      <div id="partnersGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
     <section id="contact" class="py-12 space-y-6">
@@ -204,15 +172,7 @@
           </div>
           <button type="button" class="w-full py-3 rounded-md bg-neonPurple text-cyberBg font-semibold hover:scale-[1.01] transition">Надіслати</button>
         </form>
-        <div class="glass rounded-xl p-6 border border-white/10 space-y-3">
-          <p class="text-slate-300">Букінг, колаби, промо: <a class="text-neonCyan hover:text-white" href="mailto:booking@sunfixer.pp.ua">booking@sunfixer.pp.ua</a></p>
-          <div class="flex gap-3 text-neonPurple text-xl">
-            <a href="#" class="hover:text-white"><i class="fa-brands fa-instagram"></i></a>
-            <a href="#" class="hover:text-white"><i class="fa-brands fa-youtube"></i></a>
-            <a href="#" class="hover:text-white"><i class="fa-brands fa-soundcloud"></i></a>
-            <a href="#" class="hover:text-white"><i class="fa-brands fa-spotify"></i></a>
-          </div>
-        </div>
+        <div id="contactPanel" class="glass rounded-xl p-6 border border-white/10 space-y-3"></div>
       </div>
     </section>
   </main>
@@ -226,29 +186,42 @@
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: 'YOUR_API_KEY',
+      authDomain: 'YOUR_AUTH_DOMAIN',
+      projectId: 'YOUR_PROJECT_ID',
+      storageBucket: 'YOUR_STORAGE_BUCKET',
+      messagingSenderId: 'YOUR_SENDER_ID',
+      appId: 'YOUR_APP_ID',
+    };
+
+    const ADMIN_UIDS = ['YOUR_ADMIN_UID'];
+
     const modalOverlay = document.getElementById('modalOverlay');
     const modalContent = document.getElementById('modalContent');
     const modalClose = document.getElementById('modalClose');
 
-    const demoData = {
-      release: {
-        'demo-release': {
-          title: 'Placeholder Release',
-          embed: `<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/7ouMYWpwJ422jRcDASZB7P?utm_source=generator" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
-        }
-      },
-      video: {
-        'demo-video': {
-          title: 'Placeholder Video',
-          embed: `<div class="aspect-video w-full"><iframe class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`
-        }
-      },
-      photo: {
-        'demo-photo-1': { title: 'Live shot', url: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80' },
-        'demo-photo-2': { title: 'Studio lights', url: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?auto=format&fit=crop&w=1200&q=80' },
-        'demo-photo-3': { title: 'City night', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80' }
-      }
+    const modalRegistry = { release: {}, video: {}, photo: {} };
+    const state = {
+      artistInfo: null,
+      releases: [],
+      videos: [],
+      photos: [],
+      events: [],
+      label: null,
+      partners: [],
+      releaseFilter: 'all',
     };
+
+    const heroTitleEl = document.getElementById('heroTitle');
+    const heroBioEl = document.getElementById('heroBio');
+    const discographyGrid = document.getElementById('discographyGrid');
+    const videosGrid = document.getElementById('videosGrid');
+    const photosGrid = document.getElementById('photosGrid');
+    const eventsList = document.getElementById('eventsList');
+    const labelInfo = document.getElementById('labelInfo');
+    const partnersGrid = document.getElementById('partnersGrid');
+    const contactPanel = document.getElementById('contactPanel');
 
     function openModal(html) {
       modalContent.innerHTML = html;
@@ -267,27 +240,352 @@
       if (e.key === 'Escape') closeModal();
     });
 
+    function registerModal(type, id, payload) {
+      if (!modalRegistry[type]) modalRegistry[type] = {};
+      modalRegistry[type][id] = payload;
+    }
+
     function buildModal(type, id) {
-      if (!demoData[type] || !demoData[type][id]) {
-        return '<div class="text-slate-200">Контент не знайдено.</div>';
+      const item = modalRegistry[type]?.[id];
+      if (!item) return '<div class="text-slate-200">Контент не знайдено.</div>';
+      if (type === 'release') {
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3>${item.embed ?? '<p class="text-slate-300">Немає плеєра</p>'}</div>`;
       }
-      const item = demoData[type][id];
-      if (type === 'release' || type === 'video') {
-        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3>${item.embed}</div>`;
+      if (type === 'video') {
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3><div class="aspect-video w-full"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${item.youtubeId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>`;
       }
       if (type === 'photo') {
-        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3><img src="${item.url}" alt="${item.title}" class="w-full rounded-lg" loading="lazy" /></div>`;
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title ?? 'Фото'}</h3><img src="${item.url}" alt="${item.title ?? ''}" class="w-full rounded-lg" loading="lazy" /></div>`;
       }
       return '<div class="text-slate-200">Невідомий тип контенту.</div>';
     }
 
-    document.querySelectorAll('[data-modal-type]').forEach((el) => {
-      el.addEventListener('click', () => {
-        const type = el.getAttribute('data-modal-type');
-        const id = el.getAttribute('data-modal-id');
-        openModal(buildModal(type, id));
+    function attachModalHandlers(scope = document) {
+      scope.querySelectorAll('[data-modal-type]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const type = el.getAttribute('data-modal-type');
+          const id = el.getAttribute('data-modal-id');
+          openModal(buildModal(type, id));
+        });
+      });
+    }
+
+    function renderHero(info) {
+      if (!info) return;
+      heroTitleEl.textContent = info.tagline || 'SUNFIXER — Neurofunk Architect';
+      heroBioEl.textContent = info.bio || 'Shaping dark energy of sound';
+    }
+
+    function renderReleases() {
+      discographyGrid.innerHTML = '';
+      const filtered = state.releases.filter((r) => state.releaseFilter === 'all' || (r.type || 'all') === state.releaseFilter);
+      if (!filtered.length) {
+        discographyGrid.innerHTML = '<p class="text-slate-400">Немає релізів.</p>';
+        return;
+      }
+      filtered.forEach((rel) => {
+        const card = document.createElement('article');
+        card.className = 'glass rounded-xl p-4 border border-white/10 hover:border-neonPurple/50 transition cursor-pointer flex flex-col gap-3';
+        card.setAttribute('data-modal-type', 'release');
+        card.setAttribute('data-modal-id', rel.id);
+        card.innerHTML = `
+          <div class="aspect-square bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 rounded-lg mb-2 overflow-hidden">
+            ${rel.coverUrl ? `<img src="${rel.coverUrl}" alt="${rel.title}" class="w-full h-full object-cover" loading="lazy" />` : ''}
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h3 class="text-xl font-display">${rel.title}</h3>
+              <p class="text-xs text-slate-400">${rel.date ?? ''}</p>
+            </div>
+            <span class="text-[10px] uppercase tracking-wide text-neonCyan">${rel.type ?? 'release'}</span>
+          </div>
+        `;
+        registerModal('release', rel.id, { title: rel.title, embed: rel.embedHtml });
+        discographyGrid.appendChild(card);
+      });
+      attachModalHandlers(discographyGrid);
+    }
+
+    function renderVideos() {
+      videosGrid.innerHTML = '';
+      if (!state.videos.length) {
+        videosGrid.innerHTML = '<p class="text-slate-400">Немає відео.</p>';
+        return;
+      }
+      state.videos.forEach((v) => {
+        const card = document.createElement('article');
+        card.className = 'glass rounded-xl overflow-hidden border border-white/10 hover:border-neonPurple/50 transition cursor-pointer flex flex-col';
+        card.setAttribute('data-modal-type', 'video');
+        card.setAttribute('data-modal-id', v.id);
+        card.innerHTML = `
+          <div class="aspect-video bg-gradient-to-br from-neonCyan/30 to-neonPurple/30 flex items-center justify-center text-slate-300">
+            ${v.thumbnail ? `<img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover" loading="lazy" />` : 'YouTube прев\'ю'}
+          </div>
+          <div class="p-3">
+            <h3 class="text-lg font-display">${v.title}</h3>
+          </div>
+        `;
+        registerModal('video', v.id, { title: v.title, youtubeId: v.youtubeId });
+        videosGrid.appendChild(card);
+      });
+      attachModalHandlers(videosGrid);
+    }
+
+    function renderPhotos() {
+      photosGrid.innerHTML = '';
+      if (!state.photos.length) {
+        photosGrid.innerHTML = '<p class="text-slate-400">Немає фото.</p>';
+        return;
+      }
+      state.photos.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'glass rounded-lg overflow-hidden bg-gradient-to-br from-neonPurple/25 to-neonCyan/20 cursor-pointer';
+        card.style.minHeight = '180px';
+        card.setAttribute('data-modal-type', 'photo');
+        card.setAttribute('data-modal-id', p.id);
+        card.innerHTML = p.url ? `<img src="${p.url}" alt="${p.alt ?? ''}" class="w-full h-full object-cover" loading="lazy" />` : '';
+        registerModal('photo', p.id, { title: p.alt, url: p.url });
+        photosGrid.appendChild(card);
+      });
+      attachModalHandlers(photosGrid);
+    }
+
+    function renderEvents() {
+      eventsList.innerHTML = '';
+      if (!state.events.length) {
+        eventsList.innerHTML = '<p class="text-slate-400">Наразі немає подій.</p>';
+        return;
+      }
+      const sorted = [...state.events].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      sorted.forEach((ev) => {
+        const row = document.createElement('div');
+        row.className = 'glass rounded-lg p-4 border border-white/10 flex items-center justify-between';
+        row.innerHTML = `
+          <div>
+            <p class="text-sm text-neonCyan">${ev.date ?? ''} — ${ev.location ?? ''}</p>
+            <p class="text-lg font-semibold">${ev.title}</p>
+          </div>
+          ${ev.ticketUrl ? `<a class="text-sm text-neonPurple hover:text-white" href="${ev.ticketUrl}" target="_blank" rel="noreferrer">Квитки</a>` : '<span class="text-xs text-slate-500">info soon</span>'}
+        `;
+        eventsList.appendChild(row);
+      });
+    }
+
+    function renderLabel() {
+      labelInfo.innerHTML = '';
+      const label = state.label;
+      if (!label) {
+        labelInfo.innerHTML = '<p class="text-slate-400">Інформація лейблу буде додана.</p>';
+        return;
+      }
+      labelInfo.innerHTML = `
+        <div class="h-24 w-24 rounded-full bg-gradient-to-br from-neonPurple/40 to-neonCyan/30 overflow-hidden">
+          ${label.logo ? `<img src="${label.logo}" alt="${label.name}" class="w-full h-full object-cover" loading="lazy" />` : ''}
+        </div>
+        <div class="space-y-2">
+          <p class="text-slate-300">${label.desc ?? ''}</p>
+          <div class="flex flex-wrap gap-3 text-neonCyan text-sm">
+            ${(label.links || []).map((l) => `<a href="${l.url}" class="hover:text-white" target="_blank" rel="noreferrer">${l.name}</a>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPartners() {
+      partnersGrid.innerHTML = '';
+      if (!state.partners.length) {
+        partnersGrid.innerHTML = '<p class="text-slate-400">Партнери будуть додані.</p>';
+        return;
+      }
+      state.partners.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'glass rounded-lg p-4 text-center text-slate-300 hover:border-neonPurple/50 border border-white/10 transition flex items-center justify-center min-h-[96px]';
+        card.innerHTML = p.logo ? `<img src="${p.logo}" alt="${p.name}" class="max-h-12 mx-auto" loading="lazy" />` : p.name;
+        partnersGrid.appendChild(card);
+      });
+    }
+
+    function renderContact(info) {
+      contactPanel.innerHTML = '';
+      const email = info?.email || 'booking@sunfixer.pp.ua';
+      const socials = info?.socials || {};
+      contactPanel.innerHTML = `
+        <p class="text-slate-300">Букінг, колаби, промо: <a class="text-neonCyan hover:text-white" href="mailto:${email}">${email}</a></p>
+        <div class="flex gap-3 text-neonPurple text-xl">
+          ${socials.instagram ? `<a href="${socials.instagram}" class="hover:text-white" target="_blank" rel="noreferrer"><i class="fa-brands fa-instagram"></i></a>` : ''}
+          ${socials.youtube ? `<a href="${socials.youtube}" class="hover:text-white" target="_blank" rel="noreferrer"><i class="fa-brands fa-youtube"></i></a>` : ''}
+          ${socials.soundcloud ? `<a href="${socials.soundcloud}" class="hover:text-white" target="_blank" rel="noreferrer"><i class="fa-brands fa-soundcloud"></i></a>` : ''}
+          ${socials.spotify ? `<a href="${socials.spotify}" class="hover:text-white" target="_blank" rel="noreferrer"><i class="fa-brands fa-spotify"></i></a>` : ''}
+        </div>
+      `;
+    }
+
+    function renderAll() {
+      renderHero(state.artistInfo);
+      renderReleases();
+      renderVideos();
+      renderPhotos();
+      renderEvents();
+      renderLabel();
+      renderPartners();
+      renderContact(state.artistInfo);
+    }
+
+    async function getDownloadUrlIfGs(storage, gsUrl) {
+      if (!gsUrl || !storage) return gsUrl;
+      if (!gsUrl.startsWith('gs://')) return gsUrl;
+      try {
+        const ref = storage.refFromURL(gsUrl);
+        return await ref.getDownloadURL();
+      } catch (e) {
+        console.warn('Не вдалось отримати URL', e);
+        return gsUrl;
+      }
+    }
+
+    async function initFirebaseAndData() {
+      const hasConfig = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY';
+      if (!hasConfig) {
+        console.warn('Firebase config не заповнено, використовую мок-дані.');
+        loadMockData();
+        return;
+      }
+      try {
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+        const storage = firebase.storage(app);
+
+        db.collection('artist_info').limit(1).onSnapshot((snap) => {
+          snap.forEach((doc) => {
+            state.artistInfo = { id: doc.id, ...doc.data() };
+            renderHero(state.artistInfo);
+            renderContact(state.artistInfo);
+          });
+        });
+
+        db.collection('releases').onSnapshot(async (snap) => {
+          const items = await Promise.all(snap.docs.map(async (doc) => {
+            const data = doc.data();
+            const coverUrl = await getDownloadUrlIfGs(storage, data.cover_gs_url);
+            const embedHtml = data.platforms?.spotify
+              ? `<iframe style="border-radius:12px" src="${data.platforms.spotify}" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+              : '';
+            return { id: doc.id, title: data.title, date: data.date, coverUrl, embedHtml, type: data.type || 'release' };
+          }));
+          state.releases = items;
+          renderReleases();
+        });
+
+        db.collection('videos').onSnapshot(async (snap) => {
+          const items = await Promise.all(snap.docs.map(async (doc) => {
+            const data = doc.data();
+            const thumbnail = await getDownloadUrlIfGs(storage, data.thumbnail_gs_url);
+            return { id: doc.id, title: data.title, youtubeId: data.youtubeId, thumbnail };
+          }));
+          state.videos = items;
+          renderVideos();
+        });
+
+        db.collection('photos').onSnapshot(async (snap) => {
+          const items = await Promise.all(snap.docs.map(async (doc) => {
+            const data = doc.data();
+            const url = await getDownloadUrlIfGs(storage, data.image_gs_url);
+            return { id: doc.id, title: data.alt, alt: data.alt, url, category: data.category };
+          }));
+          state.photos = items;
+          renderPhotos();
+        });
+
+        db.collection('events').onSnapshot((snap) => {
+          state.events = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          renderEvents();
+        });
+
+        db.collection('label').limit(1).onSnapshot(async (snap) => {
+          snap.forEach(async (doc) => {
+            const data = doc.data();
+            const logo = await getDownloadUrlIfGs(storage, data.logo);
+            state.label = { ...data, logo };
+            renderLabel();
+          });
+        });
+
+        db.collection('partners').onSnapshot(async (snap) => {
+          const items = await Promise.all(snap.docs.map(async (doc) => {
+            const data = doc.data();
+            const logo = await getDownloadUrlIfGs(storage, data.logo_gs_url);
+            return { id: doc.id, name: data.name, url: data.url, logo };
+          }));
+          state.partners = items;
+          renderPartners();
+        });
+      } catch (error) {
+        console.error('Помилка ініціалізації Firebase, використовую мок-дані', error);
+        loadMockData();
+      }
+    }
+
+    function loadMockData() {
+      state.artistInfo = {
+        tagline: 'SUNFIXER — Neurofunk Architect',
+        bio: 'Демо біо: кіберпанк саунд, важкий бас, темні ритми.',
+        email: 'booking@sunfixer.pp.ua',
+        socials: {
+          instagram: '#', youtube: '#', soundcloud: '#', spotify: '#',
+        },
+      };
+      state.releases = [
+        {
+          id: 'demo-release',
+          title: 'Placeholder Release',
+          date: '2025',
+          coverUrl: 'https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?auto=format&fit=crop&w=800&q=80',
+          embedHtml: `<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/7ouMYWpwJ422jRcDASZB7P?utm_source=generator" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`,
+          type: 'single',
+        },
+      ];
+      state.videos = [
+        {
+          id: 'demo-video',
+          title: 'Placeholder Video',
+          youtubeId: 'dQw4w9WgXcQ',
+          thumbnail: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
+        },
+      ];
+      state.photos = [
+        { id: 'demo-photo-1', title: 'Live shot', url: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80' },
+        { id: 'demo-photo-2', title: 'Studio lights', url: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?auto=format&fit=crop&w=1200&q=80' },
+        { id: 'demo-photo-3', title: 'City night', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=80' },
+      ];
+      state.events = [
+        { id: 'demo-ev', title: 'SUNFIXER LIVE', date: '12.03.2025', location: 'Київ', ticketUrl: '#' },
+      ];
+      state.label = {
+        name: 'CORE64 RECORDS',
+        desc: 'Офіційний лейбл SUNFIXER. Підтримка експериментальних саунд-дизайнерів та DnB продюсерів.',
+        logo: '',
+        links: [
+          { name: 'Website', url: '#' },
+          { name: 'Instagram', url: '#' },
+          { name: 'Bandcamp', url: '#' },
+        ],
+      };
+      state.partners = [
+        { id: 'p1', name: 'Партнер 1', logo: '' },
+        { id: 'p2', name: 'Партнер 2', logo: '' },
+      ];
+      renderAll();
+    }
+
+    document.querySelectorAll('.release-filter').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.releaseFilter = btn.getAttribute('data-filter');
+        renderReleases();
       });
     });
+
+    renderAll();
+    initFirebaseAndData();
   </script>
 </body>
 </html>
