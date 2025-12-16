@@ -363,6 +363,7 @@
     // }
 
     const ADMIN_UIDS = ['CA450nemojZFKUZ8rmtZmXEqMeF3'];
+    const ENABLE_MOCK_IF_EMPTY = true; // вмикає демо-дані, якщо Firestore порожній
 
     const modalOverlay = document.getElementById('modalOverlay');
     const modalContent = document.getElementById('modalContent');
@@ -386,7 +387,19 @@
       db: null,
       storage: null,
       auth: null,
+      usedMock: false,
     };
+
+    function shouldForceMock() {
+      return !state.usedMock
+        && !state.artistInfo
+        && state.releases.length === 0
+        && state.videos.length === 0
+        && state.photos.length === 0
+        && state.events.length === 0
+        && !state.label
+        && state.partners.length === 0;
+    }
 
     const heroTitleEl = document.getElementById('heroTitle');
     const heroBioEl = document.getElementById('heroBio');
@@ -918,14 +931,31 @@
         setupAuth();
 
         db.collection('artist_info').limit(1).onSnapshot((snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (artist_info), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           snap.forEach((doc) => {
             state.artistInfo = { id: doc.id, ...doc.data() };
             renderHero(state.artistInfo);
             renderContact(state.artistInfo);
           });
+        }, (err) => {
+          console.warn('artist_info snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('releases').onSnapshot(async (snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (releases), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
             const coverUrl = await getDownloadUrlIfGs(storage, data.cover_gs_url);
@@ -936,9 +966,19 @@
           }));
           state.releases = items;
           renderReleases();
+        }, (err) => {
+          console.warn('releases snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('videos').onSnapshot(async (snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (videos), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
             const thumbnail = await getDownloadUrlIfGs(storage, data.thumbnail_gs_url);
@@ -946,9 +986,19 @@
           }));
           state.videos = items;
           renderVideos();
+        }, (err) => {
+          console.warn('videos snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('photos').onSnapshot(async (snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (photos), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
             const url = await getDownloadUrlIfGs(storage, data.image_gs_url);
@@ -956,23 +1006,53 @@
           }));
           state.photos = items;
           renderPhotos();
+        }, (err) => {
+          console.warn('photos snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('events').onSnapshot((snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (events), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           state.events = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           renderEvents();
+        }, (err) => {
+          console.warn('events snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('label').limit(1).onSnapshot(async (snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (label), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           snap.forEach(async (doc) => {
             const data = doc.data();
             const logo = await getDownloadUrlIfGs(storage, data.logo);
             state.label = { ...data, logo };
             renderLabel();
           });
+        }, (err) => {
+          console.warn('label snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
 
         db.collection('partners').onSnapshot(async (snap) => {
+          if (snap.empty) {
+            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
+              console.warn('Firestore порожній (partners), показую мок-дані');
+              loadMockData();
+            }
+            return; // не затираємо моки
+          }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
             const logo = await getDownloadUrlIfGs(storage, data.logo_gs_url);
@@ -980,6 +1060,9 @@
           }));
           state.partners = items;
           renderPartners();
+        }, (err) => {
+          console.warn('partners snapshot error, моки', err);
+          if (!state.usedMock) loadMockData();
         });
       } catch (error) {
         console.error('Помилка ініціалізації Firebase, використовую мок-дані', error);
@@ -988,6 +1071,8 @@
     }
 
     function loadMockData() {
+      state.usedMock = true;
+      console.warn('Використовую демо-дані (mock).');
       state.artistInfo = {
         tagline: 'SUNFIXER — Neurofunk Architect',
         bio: 'Демо біо: кіберпанк саунд, важкий бас, темні ритми.',
@@ -1078,6 +1163,14 @@
     setupRevealObserver();
     setupSmoothNav();
     initFirebaseAndData();
+
+    // Якщо нічого не підвантажилось (порожній Firestore/помилки), форсимо моки через таймаут
+    setTimeout(() => {
+      if (shouldForceMock()) {
+        console.warn('Timeout fallback: показую мок-дані');
+        loadMockData();
+      }
+    }, 2000);
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
