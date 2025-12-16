@@ -173,7 +173,7 @@
             <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
           </div>
           <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва (обов'язково)" required />
-          <input name="youtubeId" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube ID (обов'язково)" required />
+          <input name="youtubeId" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube ID (опційно)" />
           <label class="block text-sm text-slate-300">Прев'ю</label>
           <div class="dropzone" data-drop-target="videoThumb">Перетягніть прев'ю або натисніть
             <input type="file" class="hidden" data-file-input="videoThumb" accept="image/*" />
@@ -413,6 +413,7 @@
 
     function shouldForceMock() {
       return !state.usedMock
+        && !state.firebaseReady
         && !state.artistInfo
         && state.releases.length === 0
         && state.videos.length === 0
@@ -494,7 +495,10 @@
         return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3>${item.embed ?? '<p class="text-slate-300">Немає плеєра</p>'}</div>`;
       }
       if (type === 'video') {
-        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3><div class="aspect-video w-full"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${item.youtubeId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>`;
+        const player = item.youtubeId
+          ? `<div class="aspect-video w-full"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${item.youtubeId}" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`
+          : '<p class="text-slate-300">YouTube ID не вказано</p>';
+        return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title}</h3>${player}</div>`;
       }
       if (type === 'photo') {
         return `<div class="space-y-3"><h3 class="text-xl font-display">${item.title ?? 'Фото'}</h3><img src="${item.url}" alt="${item.title ?? ''}" class="w-full rounded-lg" loading="lazy" /></div>`;
@@ -567,7 +571,10 @@
             ${v.thumbnail ? `<img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover" loading="lazy" />` : 'YouTube прев\'ю'}
           </div>
           <div class="p-3 flex items-center justify-between">
-            <h3 class="text-lg font-display">${v.title}</h3>
+            <div>
+              <h3 class="text-lg font-display">${v.title}</h3>
+              ${v.youtubeId ? '' : '<p class="text-xs text-amber-300">YouTube ID не вказано</p>'}
+            </div>
             ${adminActions}
           </div>
         `;
@@ -728,6 +735,7 @@
     function requireAdmin() {
       if (!state.firebaseReady) {
         alert('Firebase не налаштовано. Додайте конфіг.');
+        showToast('Дії адміна недоступні без Firebase', 'error');
         return false;
       }
       if (!state.user) {
@@ -841,9 +849,11 @@
           return;
         }
         let cover_gs_url = null;
+        let coverUrl = null;
         if (uploadQueue.releaseCover) {
           const upload = await uploadFromQueue('releaseCover', 'releases');
           cover_gs_url = upload.gsUrl;
+          coverUrl = upload.downloadURL;
         }
         const payload = {
           title: fd.get('title'),
@@ -852,7 +862,18 @@
           cover_gs_url,
           platforms: { spotify: fd.get('spotify') || '' },
         };
-        await state.db.collection('releases').add(payload);
+        const docRef = await state.db.collection('releases').add(payload);
+        state.releases = [...state.releases, {
+          id: docRef.id,
+          title: payload.title,
+          date: payload.date,
+          type: payload.type,
+          coverUrl: coverUrl || null,
+          embedHtml: payload.platforms.spotify
+            ? `<iframe style="border-radius:12px" src="${payload.platforms.spotify}" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+            : '',
+        }];
+        renderReleases();
         e.target.reset();
         showToast('Реліз додано', 'success');
         updatePreview('releaseCover', null);
@@ -871,22 +892,32 @@
       setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
-        if (!fd.get('title') || !fd.get('youtubeId')) {
-          alert("Назва і YouTube ID обов'язкові");
+        if (!fd.get('title')) {
+          alert('Назва відео обов\'язкова');
           setLoading(e.target, false);
           return;
         }
+        const youtubeId = (fd.get('youtubeId') || '').trim();
         let thumbnail_gs_url = null;
+        let thumbUrl = null;
         if (uploadQueue.videoThumb) {
           const upload = await uploadFromQueue('videoThumb', 'videos');
           thumbnail_gs_url = upload.gsUrl;
+          thumbUrl = upload.downloadURL;
         }
         const payload = {
           title: fd.get('title'),
-          youtubeId: fd.get('youtubeId'),
+          youtubeId: youtubeId || null,
           thumbnail_gs_url,
         };
-        await state.db.collection('videos').add(payload);
+        const docRef = await state.db.collection('videos').add(payload);
+        state.videos = [...state.videos, {
+          id: docRef.id,
+          title: payload.title,
+          youtubeId: payload.youtubeId,
+          thumbnail: thumbUrl,
+        }];
+        renderVideos();
         e.target.reset();
         showToast('Відео додано', 'success');
         updatePreview('videoThumb', null);
@@ -946,7 +977,9 @@
           ticketUrl: fd.get('ticketUrl'),
           past: fd.get('past') === 'on',
         };
-        await state.db.collection('events').add(payload);
+        const docRef = await state.db.collection('events').add(payload);
+        state.events = [...state.events, { id: docRef.id, ...payload }];
+        renderEvents();
         e.target.reset();
         showToast('Подію додано', 'success');
       } catch (err) {
@@ -1001,17 +1034,27 @@
           setLoading(e.target, false);
           return;
         }
-        let logo_gs_url = null;
+        let image_gs_url = null;
+        let imageUrl = null;
         if (uploadQueue.partnerLogo) {
           const upload = await uploadFromQueue('partnerLogo', 'partners');
           logo_gs_url = upload.gsUrl;
+          imageUrl = upload.downloadURL;
         }
         const payload = {
           name: fd.get('name'),
           url: fd.get('url'),
           logo_gs_url,
         };
-        await state.db.collection('partners').add(payload);
+        const docRef = await state.db.collection('photos').add(payload);
+        state.photos = [...state.photos, {
+          id: docRef.id,
+          alt: payload.alt,
+          title: payload.alt,
+          category: payload.category,
+          url: imageUrl,
+        }];
+        renderPhotos();
         e.target.reset();
         showToast('Партнера додано', 'success');
         updatePreview('partnerLogo', null);
@@ -1046,9 +1089,27 @@
         if (!confirm('Видалити елемент?')) return;
         try {
           await state.db.collection(collection).doc(id).delete();
+          if (collection === 'releases') {
+            state.releases = state.releases.filter((r) => r.id !== id);
+            renderReleases();
+          } else if (collection === 'videos') {
+            state.videos = state.videos.filter((v) => v.id !== id);
+            renderVideos();
+          } else if (collection === 'photos') {
+            state.photos = state.photos.filter((p) => p.id !== id);
+            renderPhotos();
+          } else if (collection === 'events') {
+            state.events = state.events.filter((ev) => ev.id !== id);
+            renderEvents();
+          } else if (collection === 'partners') {
+            state.partners = state.partners.filter((p) => p.id !== id);
+            renderPartners();
+          }
+          showToast('Видалено', 'success');
         } catch (err) {
           console.error('Помилка видалення', collection, id, err);
           alert(`Не вдалося видалити: ${err?.message || err}`);
+          showToast('Не вдалося видалити', 'error');
         }
       });
     }
@@ -1107,11 +1168,7 @@
 
         db.collection('artist_info').limit(1).onSnapshot((snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (artist_info), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            return; // порожній стан без моків коли Firebase доступний
           }
           snap.forEach((doc) => {
             state.artistInfo = { id: doc.id, ...doc.data() };
@@ -1119,17 +1176,15 @@
             renderContact(state.artistInfo);
           });
         }, (err) => {
-          console.warn('artist_info snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('artist_info snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('releases').onSnapshot(async (snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (releases), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.releases = [];
+            renderReleases();
+            return;
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
@@ -1142,17 +1197,15 @@
           state.releases = items;
           renderReleases();
         }, (err) => {
-          console.warn('releases snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('releases snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('videos').onSnapshot(async (snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (videos), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.videos = [];
+            renderVideos();
+            return;
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
@@ -1162,17 +1215,15 @@
           state.videos = items;
           renderVideos();
         }, (err) => {
-          console.warn('videos snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('videos snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('photos').onSnapshot(async (snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (photos), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.photos = [];
+            renderPhotos();
+            return;
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
@@ -1182,32 +1233,28 @@
           state.photos = items;
           renderPhotos();
         }, (err) => {
-          console.warn('photos snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('photos snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('events').onSnapshot((snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (events), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.events = [];
+            renderEvents();
+            return;
           }
           state.events = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           renderEvents();
         }, (err) => {
-          console.warn('events snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('events snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('label').limit(1).onSnapshot(async (snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (label), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.label = null;
+            renderLabel();
+            return;
           }
           snap.forEach(async (doc) => {
             const data = doc.data();
@@ -1216,17 +1263,15 @@
             renderLabel();
           });
         }, (err) => {
-          console.warn('label snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('label snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
 
         db.collection('partners').onSnapshot(async (snap) => {
           if (snap.empty) {
-            if (ENABLE_MOCK_IF_EMPTY && !state.usedMock) {
-              console.warn('Firestore порожній (partners), показую мок-дані');
-              loadMockData();
-            }
-            return; // не затираємо моки
+            state.partners = [];
+            renderPartners();
+            return;
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
@@ -1236,8 +1281,8 @@
           state.partners = items;
           renderPartners();
         }, (err) => {
-          console.warn('partners snapshot error, моки', err);
-          if (!state.usedMock) loadMockData();
+          console.warn('partners snapshot error', err);
+          if (!state.firebaseReady && !state.usedMock) loadMockData();
         });
       } catch (error) {
         console.error('Помилка ініціалізації Firebase, використовую мок-дані', error);
