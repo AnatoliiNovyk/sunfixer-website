@@ -69,6 +69,9 @@
     .dropzone.dragover { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,0.08); }
     .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
+    .toast { animation: toast-in 0.25s ease, toast-out 0.25s ease 3.75s forwards; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toast-out { to { opacity: 0; transform: translateY(-6px); } }
   </style>
 </head>
 <body class="min-h-screen bg-cyberBg text-slate-100">
@@ -97,17 +100,24 @@
     </div>
   </header>
 
-  <section id="adminPanel" class="hidden max-w-6xl mx-auto px-4 py-6">
-    <div class="glass rounded-xl border border-white/10 p-4 space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+  <section id="adminPanel" class="hidden fixed inset-0 z-40 bg-black/80 backdrop-blur overflow-y-auto">
+    <div class="max-w-6xl mx-auto px-4 py-8 space-y-4">
+      <div class="glass rounded-xl border border-white/10 p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Адмін режим</p>
           <h3 class="text-2xl font-display">Керування контентом</h3>
           <p id="adminStatus" class="text-sm text-slate-400">Увійдіть через Google, щоб керувати даними.</p>
         </div>
         <div class="flex gap-2">
+          <button id="adminClose" class="px-3 py-2 rounded-md border border-white/20 text-slate-200 hover:border-neonPurple text-sm">Закрити</button>
           <button id="adminSignOut" class="hidden px-3 py-2 rounded-md border border-white/20 text-slate-200 hover:border-neonCyan text-sm">Вийти</button>
         </div>
+      </div>
+
+      <div class="glass rounded-xl border border-white/10 p-4 flex flex-wrap gap-3 text-sm">
+        <span class="px-3 py-1 rounded-md bg-white/5 border border-white/10" id="adminBadge">Статус: офлайн</span>
+        <span class="px-3 py-1 rounded-md bg-white/5 border border-white/10" id="adminUserBadge">Користувач: -</span>
+        <span class="px-3 py-1 rounded-md bg-white/5 border border-white/10">UID доступ: ADMIN_UIDS</span>
       </div>
 
       <div id="adminNotice" class="text-sm text-amber-300 hidden">Ви увійшли, але не маєте прав адміна (UID не у списку). Зверніться до власника проєкту.</div>
@@ -132,6 +142,7 @@
           <div class="dropzone" data-drop-target="artistHero">Перетягніть зображення або натисніть
             <input type="file" class="hidden" data-file-input="artistHero" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="artistHero"></div>
         </form>
 
         <form id="formRelease" class="glass rounded-lg border border-white/10 p-4 space-y-3">
@@ -139,7 +150,7 @@
             <h4 class="font-display text-lg">Releases</h4>
             <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
           </div>
-          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва (обов'язково)" required />
           <div class="grid grid-cols-2 gap-2">
             <input name="date" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Дата" />
             <select name="type" class="bg-black/40 border border-white/10 rounded-md px-3 py-2">
@@ -153,6 +164,7 @@
           <div class="dropzone" data-drop-target="releaseCover">Перетягніть обкладинку або натисніть
             <input type="file" class="hidden" data-file-input="releaseCover" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="releaseCover"></div>
         </form>
 
         <form id="formVideo" class="glass rounded-lg border border-white/10 p-4 space-y-3">
@@ -160,12 +172,13 @@
             <h4 class="font-display text-lg">Videos</h4>
             <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
           </div>
-          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
-          <input name="youtubeId" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube ID" required />
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва (обов'язково)" required />
+          <input name="youtubeId" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="YouTube ID (обов'язково)" required />
           <label class="block text-sm text-slate-300">Прев'ю</label>
           <div class="dropzone" data-drop-target="videoThumb">Перетягніть прев'ю або натисніть
             <input type="file" class="hidden" data-file-input="videoThumb" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="videoThumb"></div>
         </form>
 
         <form id="formPhoto" class="glass rounded-lg border border-white/10 p-4 space-y-3">
@@ -179,6 +192,7 @@
           <div class="dropzone" data-drop-target="photoImage">Перетягніть фото або натисніть
             <input type="file" class="hidden" data-file-input="photoImage" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="photoImage"></div>
         </form>
 
         <form id="formEvent" class="glass rounded-lg border border-white/10 p-4 space-y-3">
@@ -186,7 +200,7 @@
             <h4 class="font-display text-lg">Events</h4>
             <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
           </div>
-          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <input name="title" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва (обов'язково)" required />
           <div class="grid grid-cols-2 gap-2">
             <input name="date" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Дата" />
             <input name="location" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Локація" />
@@ -208,6 +222,7 @@
           <div class="dropzone" data-drop-target="labelLogo">Перетягніть лого або натисніть
             <input type="file" class="hidden" data-file-input="labelLogo" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="labelLogo"></div>
           <div class="grid grid-cols-3 gap-2 text-sm">
             <input name="link1" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання 1" />
             <input name="link2" class="bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Посилання 2" />
@@ -220,12 +235,13 @@
             <h4 class="font-display text-lg">Partners</h4>
             <button type="submit" class="px-3 py-1 rounded-md bg-neonPurple text-cyberBg text-sm font-semibold">Додати</button>
           </div>
-          <input name="name" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва" required />
+          <input name="name" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="Назва (обов'язково)" required />
           <input name="url" class="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2" placeholder="URL" />
           <label class="block text-sm text-slate-300">Лого</label>
           <div class="dropzone" data-drop-target="partnerLogo">Перетягніть лого або натисніть
             <input type="file" class="hidden" data-file-input="partnerLogo" accept="image/*" />
           </div>
+          <div class="text-xs text-slate-400" data-preview="partnerLogo"></div>
         </form>
       </div>
     </div>
@@ -345,6 +361,8 @@
     </div>
   </div>
 
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
   <script>
     const firebaseConfig = {
       apiKey: 'AIzaSyACU6TvulMH3rn1XSXRDvt1PubCr-KvGsI',
@@ -420,6 +438,11 @@
     const adminNoFirebase = document.getElementById('adminNoFirebase');
     const adminSignOut = document.getElementById('adminSignOut');
     const adminToggleBtn = document.getElementById('adminToggle');
+    const adminClose = document.getElementById('adminClose');
+    const adminBadge = document.getElementById('adminBadge');
+    const adminUserBadge = document.getElementById('adminUserBadge');
+    const toastContainer = document.getElementById('toastContainer');
+    let adminPanelOpen = false;
 
     function openModal(html) {
       modalContent.innerHTML = html;
@@ -437,6 +460,27 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
+
+    function showToast(message, type = 'info') {
+      if (!toastContainer) return;
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-white/10 border-white/20 text-slate-100',
+        success: 'bg-emerald-900/60 border-emerald-400/30 text-emerald-100',
+        error: 'bg-rose-900/60 border-rose-400/30 text-rose-100',
+      };
+      toast.className = `toast glass rounded-lg px-4 py-3 border ${colors[type] || colors.info} shadow-lg`; // коротке нотифікаційне вікно
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function setLoading(formEl, isLoading) {
+      const btn = formEl.querySelector('button[type="submit"]');
+      if (!btn) return;
+      btn.disabled = isLoading;
+      btn.textContent = isLoading ? 'Збереження...' : btn.getAttribute('data-label') || btn.textContent || 'Зберегти';
+    }
 
     function registerModal(type, id, payload) {
       if (!modalRegistry[type]) modalRegistry[type] = {};
@@ -652,11 +696,13 @@
     }
 
     function updateAdminUI() {
-      const panelVisible = state.isAdmin && state.firebaseReady;
-      adminPanel.classList.toggle('hidden', !panelVisible);
+      const canSeePanel = state.isAdmin && state.firebaseReady && adminPanelOpen;
+      adminPanel.classList.toggle('hidden', !canSeePanel);
       adminSignOut.classList.toggle('hidden', !state.user);
       adminNotice.classList.toggle('hidden', !(state.user && !state.isAdmin));
       adminNoFirebase.classList.toggle('hidden', state.firebaseReady);
+      if (adminBadge) adminBadge.textContent = `Статус: ${state.firebaseReady ? 'онлайн' : 'офлайн'}`;
+      if (adminUserBadge) adminUserBadge.textContent = state.user ? `Користувач: ${state.user.email || state.user.uid}` : 'Користувач: -';
       if (!state.firebaseReady) {
         adminStatus.textContent = 'Адмін-режим недоступний без Firebase config.';
         return;
@@ -668,6 +714,15 @@
       } else {
         adminStatus.textContent = 'Увійдіть через Google, щоб керувати даними.';
       }
+    }
+
+    function toggleAdminPanel(force) {
+      if (!state.isAdmin || !state.firebaseReady) {
+        adminPanelOpen = false;
+      } else {
+        adminPanelOpen = typeof force === 'boolean' ? force : !adminPanelOpen;
+      }
+      updateAdminUI();
     }
 
     function requireAdmin() {
@@ -686,6 +741,22 @@
       return true;
     }
 
+    function updatePreview(key, file) {
+      const target = document.querySelector(`[data-preview="${key}"]`);
+      if (!target) return;
+      if (!file) {
+        target.textContent = '';
+        target.innerHTML = '';
+        return;
+      }
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        target.innerHTML = `<img src="${url}" alt="preview" class="mt-2 max-h-32 rounded-md border border-white/10 object-cover" />`;
+      } else {
+        target.textContent = file.name;
+      }
+    }
+
     function bindDropzones() {
       document.querySelectorAll('.dropzone').forEach((dz) => {
         const key = dz.getAttribute('data-drop-target');
@@ -699,12 +770,14 @@
           if (e.dataTransfer.files.length) {
             uploadQueue[key] = e.dataTransfer.files[0];
             dz.textContent = `Обрано: ${uploadQueue[key].name}`;
+            updatePreview(key, uploadQueue[key]);
           }
         });
         input?.addEventListener('change', (e) => {
           if (e.target.files.length) {
             uploadQueue[key] = e.target.files[0];
             dz.textContent = `Обрано: ${uploadQueue[key].name}`;
+            updatePreview(key, uploadQueue[key]);
           }
         });
       });
@@ -725,6 +798,7 @@
     async function handleArtistSave(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
         const socials = ['instagram', 'youtube', 'soundcloud', 'spotify'].reduce((acc, key) => {
@@ -745,18 +819,27 @@
         };
         if (heroImageGs) payload.hero_image = heroImageGs;
         await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
-        alert('Збережено artist_info');
+        showToast('Artist info збережено', 'success');
       } catch (err) {
         console.error('Помилка збереження artist_info', err);
         alert(`Помилка збереження artist_info: ${err?.message || err}`);
+        showToast('Не вдалося зберегти artist info', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handleReleaseAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
+        if (!fd.get('title')) {
+          alert("Назва релізу обов'язкова");
+          setLoading(e.target, false);
+          return;
+        }
         let cover_gs_url = null;
         if (uploadQueue.releaseCover) {
           const upload = await uploadFromQueue('releaseCover', 'releases');
@@ -771,18 +854,28 @@
         };
         await state.db.collection('releases').add(payload);
         e.target.reset();
-        alert('Реліз додано');
+        showToast('Реліз додано', 'success');
+        updatePreview('releaseCover', null);
       } catch (err) {
         console.error('Помилка додавання релізу', err);
         alert(`Не вдалося додати реліз: ${err?.message || err}`);
+        showToast('Не вдалося додати реліз', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handleVideoAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
+        if (!fd.get('title') || !fd.get('youtubeId')) {
+          alert("Назва і YouTube ID обов'язкові");
+          setLoading(e.target, false);
+          return;
+        }
         let thumbnail_gs_url = null;
         if (uploadQueue.videoThumb) {
           const upload = await uploadFromQueue('videoThumb', 'videos');
@@ -795,16 +888,21 @@
         };
         await state.db.collection('videos').add(payload);
         e.target.reset();
-        alert('Відео додано');
+        showToast('Відео додано', 'success');
+        updatePreview('videoThumb', null);
       } catch (err) {
         console.error('Помилка додавання відео', err);
         alert(`Не вдалося додати відео: ${err?.message || err}`);
+        showToast('Не вдалося додати відео', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handlePhotoAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
         let image_gs_url = null;
@@ -819,18 +917,28 @@
         };
         await state.db.collection('photos').add(payload);
         e.target.reset();
-        alert('Фото додано');
+        showToast('Фото додано', 'success');
+        updatePreview('photoImage', null);
       } catch (err) {
         console.error('Помилка додавання фото', err);
         alert(`Не вдалося додати фото: ${err?.message || err}`);
+        showToast('Не вдалося додати фото', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handleEventAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
+        if (!fd.get('title')) {
+          alert("Назва події обов'язкова");
+          setLoading(e.target, false);
+          return;
+        }
         const payload = {
           title: fd.get('title'),
           date: fd.get('date'),
@@ -840,16 +948,20 @@
         };
         await state.db.collection('events').add(payload);
         e.target.reset();
-        alert('Подію додано');
+        showToast('Подію додано', 'success');
       } catch (err) {
         console.error('Помилка додавання події', err);
         alert(`Не вдалося додати подію: ${err?.message || err}`);
+        showToast('Не вдалося додати подію', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handleLabelSave(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
         let logo = null;
@@ -867,18 +979,28 @@
         };
         if (logo) payload.logo = logo;
         await state.db.collection('label').doc('core64').set(payload, { merge: true });
-        alert('Label збережено');
+        showToast('Label збережено', 'success');
+        updatePreview('labelLogo', null);
       } catch (err) {
         console.error('Помилка збереження label', err);
         alert(`Не вдалося зберегти label: ${err?.message || err}`);
+        showToast('Не вдалося зберегти label', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
     async function handlePartnerAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
+      setLoading(e.target, true);
       try {
         const fd = new FormData(e.target);
+        if (!fd.get('name')) {
+          alert("Назва партнера обов'язкова");
+          setLoading(e.target, false);
+          return;
+        }
         let logo_gs_url = null;
         if (uploadQueue.partnerLogo) {
           const upload = await uploadFromQueue('partnerLogo', 'partners');
@@ -891,10 +1013,14 @@
         };
         await state.db.collection('partners').add(payload);
         e.target.reset();
-        alert('Партнера додано');
+        showToast('Партнера додано', 'success');
+        updatePreview('partnerLogo', null);
       } catch (err) {
         console.error('Помилка додавання партнера', err);
         alert(`Не вдалося додати партнера: ${err?.message || err}`);
+        showToast('Не вдалося додати партнера', 'error');
+      } finally {
+        setLoading(e.target, false);
       }
     }
 
@@ -934,6 +1060,7 @@
         state.user = user;
         state.isAdmin = !!(user && ADMIN_UIDS.includes(user.uid));
         updateAdminUI();
+        if (state.isAdmin) showToast('Адмін-режим активний', 'success');
       });
       adminToggleBtn.addEventListener('click', () => {
         if (!state.firebaseReady) {
@@ -946,11 +1073,16 @@
         }
         if (!state.isAdmin) {
           adminNotice.classList.remove('hidden');
+          showToast('UID не у списку ADMIN_UIDS', 'error');
           return;
         }
-        adminPanel.classList.toggle('hidden');
+        toggleAdminPanel();
       });
-      adminSignOut.addEventListener('click', () => state.auth.signOut());
+      adminClose?.addEventListener('click', () => toggleAdminPanel(false));
+      adminSignOut.addEventListener('click', () => {
+        toggleAdminPanel(false);
+        state.auth.signOut();
+      });
     }
 
     async function initFirebaseAndData() {
