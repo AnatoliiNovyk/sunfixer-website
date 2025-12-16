@@ -9,9 +9,12 @@
   <meta property="og:description" content="Неоновий лендінг, релізи, відео, події та CMS на Firebase." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sunfixer.pp.ua" />
-  <meta property="og:image" content="https://sunfixer.pp.ua/og-image.jpg" />
+  <meta property="og:image" content="/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#0a0a0f" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -335,7 +338,7 @@
   </main>
 
   <div id="modalOverlay" class="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm items-center justify-center px-4">
-    <div class="absolute inset-0" aria-hidden="true"></div>
+    <div class="absolute inset-0 modal-backdrop pointer-events-none" aria-hidden="true"></div>
     <div class="relative max-w-3xl w-full glass rounded-2xl p-4 border border-white/10">
       <button id="modalClose" class="absolute top-3 right-3 text-slate-200 hover:text-white" aria-label="Закрити">✕</button>
       <div id="modalContent" class="text-slate-200">Контент модалки</div>
@@ -429,7 +432,7 @@
 
     modalClose.addEventListener('click', closeModal);
     modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeModal();
+      if (e.target === modalOverlay || e.target.classList.contains('modal-backdrop')) closeModal();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
@@ -722,142 +725,177 @@
     async function handleArtistSave(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      const socials = ['instagram', 'youtube', 'soundcloud', 'spotify'].reduce((acc, key) => {
-        const val = fd.get(key);
-        if (val) acc[key] = val;
-        return acc;
-      }, {});
-      let heroImageGs = null;
-      if (uploadQueue.artistHero) {
-        const upload = await uploadFromQueue('artistHero', 'artist');
-        heroImageGs = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        const socials = ['instagram', 'youtube', 'soundcloud', 'spotify'].reduce((acc, key) => {
+          const val = fd.get(key);
+          if (val) acc[key] = val;
+          return acc;
+        }, {});
+        let heroImageGs = null;
+        if (uploadQueue.artistHero) {
+          const upload = await uploadFromQueue('artistHero', 'artist');
+          heroImageGs = upload.gsUrl;
+        }
+        const payload = {
+          tagline: fd.get('tagline') || '',
+          bio: fd.get('bio') || '',
+          email: fd.get('email') || '',
+          socials,
+        };
+        if (heroImageGs) payload.hero_image = heroImageGs;
+        await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
+        alert('Збережено artist_info');
+      } catch (err) {
+        console.error('Помилка збереження artist_info', err);
+        alert(`Помилка збереження artist_info: ${err?.message || err}`);
       }
-      const payload = {
-        tagline: fd.get('tagline') || '',
-        bio: fd.get('bio') || '',
-        email: fd.get('email') || '',
-        socials,
-      };
-      if (heroImageGs) payload.hero_image = heroImageGs;
-      await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
-      alert('Збережено artist_info');
     }
 
     async function handleReleaseAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      let cover_gs_url = null;
-      if (uploadQueue.releaseCover) {
-        const upload = await uploadFromQueue('releaseCover', 'releases');
-        cover_gs_url = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        let cover_gs_url = null;
+        if (uploadQueue.releaseCover) {
+          const upload = await uploadFromQueue('releaseCover', 'releases');
+          cover_gs_url = upload.gsUrl;
+        }
+        const payload = {
+          title: fd.get('title'),
+          date: fd.get('date'),
+          type: fd.get('type') || 'single',
+          cover_gs_url,
+          platforms: { spotify: fd.get('spotify') || '' },
+        };
+        await state.db.collection('releases').add(payload);
+        e.target.reset();
+        alert('Реліз додано');
+      } catch (err) {
+        console.error('Помилка додавання релізу', err);
+        alert(`Не вдалося додати реліз: ${err?.message || err}`);
       }
-      const payload = {
-        title: fd.get('title'),
-        date: fd.get('date'),
-        type: fd.get('type') || 'single',
-        cover_gs_url,
-        platforms: { spotify: fd.get('spotify') || '' },
-      };
-      await state.db.collection('releases').add(payload);
-      e.target.reset();
-      alert('Реліз додано');
     }
 
     async function handleVideoAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      let thumbnail_gs_url = null;
-      if (uploadQueue.videoThumb) {
-        const upload = await uploadFromQueue('videoThumb', 'videos');
-        thumbnail_gs_url = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        let thumbnail_gs_url = null;
+        if (uploadQueue.videoThumb) {
+          const upload = await uploadFromQueue('videoThumb', 'videos');
+          thumbnail_gs_url = upload.gsUrl;
+        }
+        const payload = {
+          title: fd.get('title'),
+          youtubeId: fd.get('youtubeId'),
+          thumbnail_gs_url,
+        };
+        await state.db.collection('videos').add(payload);
+        e.target.reset();
+        alert('Відео додано');
+      } catch (err) {
+        console.error('Помилка додавання відео', err);
+        alert(`Не вдалося додати відео: ${err?.message || err}`);
       }
-      const payload = {
-        title: fd.get('title'),
-        youtubeId: fd.get('youtubeId'),
-        thumbnail_gs_url,
-      };
-      await state.db.collection('videos').add(payload);
-      e.target.reset();
-      alert('Відео додано');
     }
 
     async function handlePhotoAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      let image_gs_url = null;
-      if (uploadQueue.photoImage) {
-        const upload = await uploadFromQueue('photoImage', 'photos');
-        image_gs_url = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        let image_gs_url = null;
+        if (uploadQueue.photoImage) {
+          const upload = await uploadFromQueue('photoImage', 'photos');
+          image_gs_url = upload.gsUrl;
+        }
+        const payload = {
+          alt: fd.get('alt') || '',
+          category: fd.get('category') || '',
+          image_gs_url,
+        };
+        await state.db.collection('photos').add(payload);
+        e.target.reset();
+        alert('Фото додано');
+      } catch (err) {
+        console.error('Помилка додавання фото', err);
+        alert(`Не вдалося додати фото: ${err?.message || err}`);
       }
-      const payload = {
-        alt: fd.get('alt') || '',
-        category: fd.get('category') || '',
-        image_gs_url,
-      };
-      await state.db.collection('photos').add(payload);
-      e.target.reset();
-      alert('Фото додано');
     }
 
     async function handleEventAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      const payload = {
-        title: fd.get('title'),
-        date: fd.get('date'),
-        location: fd.get('location'),
-        ticketUrl: fd.get('ticketUrl'),
-        past: fd.get('past') === 'on',
-      };
-      await state.db.collection('events').add(payload);
-      e.target.reset();
-      alert('Подію додано');
+      try {
+        const fd = new FormData(e.target);
+        const payload = {
+          title: fd.get('title'),
+          date: fd.get('date'),
+          location: fd.get('location'),
+          ticketUrl: fd.get('ticketUrl'),
+          past: fd.get('past') === 'on',
+        };
+        await state.db.collection('events').add(payload);
+        e.target.reset();
+        alert('Подію додано');
+      } catch (err) {
+        console.error('Помилка додавання події', err);
+        alert(`Не вдалося додати подію: ${err?.message || err}`);
+      }
     }
 
     async function handleLabelSave(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      let logo = null;
-      if (uploadQueue.labelLogo) {
-        const upload = await uploadFromQueue('labelLogo', 'label');
-        logo = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        let logo = null;
+        if (uploadQueue.labelLogo) {
+          const upload = await uploadFromQueue('labelLogo', 'label');
+          logo = upload.gsUrl;
+        }
+        const links = [fd.get('link1'), fd.get('link2'), fd.get('link3')]
+          .filter(Boolean)
+          .map((url, idx) => ({ name: `Link ${idx + 1}`, url }));
+        const payload = {
+          name: fd.get('name') || 'CORE64 RECORDS',
+          desc: fd.get('desc') || '',
+          links,
+        };
+        if (logo) payload.logo = logo;
+        await state.db.collection('label').doc('core64').set(payload, { merge: true });
+        alert('Label збережено');
+      } catch (err) {
+        console.error('Помилка збереження label', err);
+        alert(`Не вдалося зберегти label: ${err?.message || err}`);
       }
-      const links = [fd.get('link1'), fd.get('link2'), fd.get('link3')]
-        .filter(Boolean)
-        .map((url, idx) => ({ name: `Link ${idx + 1}`, url }));
-      const payload = {
-        name: fd.get('name') || 'CORE64 RECORDS',
-        desc: fd.get('desc') || '',
-        links,
-      };
-      if (logo) payload.logo = logo;
-      await state.db.collection('label').doc('core64').set(payload, { merge: true });
-      alert('Label збережено');
     }
 
     async function handlePartnerAdd(e) {
       e.preventDefault();
       if (!requireAdmin()) return;
-      const fd = new FormData(e.target);
-      let logo_gs_url = null;
-      if (uploadQueue.partnerLogo) {
-        const upload = await uploadFromQueue('partnerLogo', 'partners');
-        logo_gs_url = upload.gsUrl;
+      try {
+        const fd = new FormData(e.target);
+        let logo_gs_url = null;
+        if (uploadQueue.partnerLogo) {
+          const upload = await uploadFromQueue('partnerLogo', 'partners');
+          logo_gs_url = upload.gsUrl;
+        }
+        const payload = {
+          name: fd.get('name'),
+          url: fd.get('url'),
+          logo_gs_url,
+        };
+        await state.db.collection('partners').add(payload);
+        e.target.reset();
+        alert('Партнера додано');
+      } catch (err) {
+        console.error('Помилка додавання партнера', err);
+        alert(`Не вдалося додати партнера: ${err?.message || err}`);
       }
-      const payload = {
-        name: fd.get('name'),
-        url: fd.get('url'),
-        logo_gs_url,
-      };
-      await state.db.collection('partners').add(payload);
-      e.target.reset();
-      alert('Партнера додано');
     }
 
     function setupAdminForms() {
@@ -880,7 +918,12 @@
         const id = btn.getAttribute('data-id');
         if (!collection || !id) return;
         if (!confirm('Видалити елемент?')) return;
-        await state.db.collection(collection).doc(id).delete();
+        try {
+          await state.db.collection(collection).doc(id).delete();
+        } catch (err) {
+          console.error('Помилка видалення', collection, id, err);
+          alert(`Не вдалося видалити: ${err?.message || err}`);
+        }
       });
     }
 

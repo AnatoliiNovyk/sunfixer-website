@@ -1,11 +1,12 @@
-const CACHE_NAME = 'sunfixer-cache-v3';
+const CACHE_NAME = 'sunfixer-cache-v4';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/icon.svg',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/og-image.png'
 ];
 
 self.addEventListener('install', (event) => {
