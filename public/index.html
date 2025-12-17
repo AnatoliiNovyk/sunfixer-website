@@ -120,6 +120,17 @@
         <span class="px-3 py-1 rounded-md bg-white/5 border border-white/10">UID доступ: ADMIN_UIDS</span>
       </div>
 
+      <div id="storageDebugPanel" class="glass rounded-xl border border-white/10 p-4 space-y-2 hidden">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-neonCyan uppercase tracking-[0.25em] text-xs">Storage debug</p>
+            <p class="text-xs text-slate-400">Останні виклики резолву зображень (ctx показує документ/поле-джерело).</p>
+          </div>
+          <button id="storageDebugClear" type="button" class="px-3 py-2 rounded-md border border-white/20 text-slate-200 hover:border-neonCyan text-sm">Очистити</button>
+        </div>
+        <pre id="storageDebugOutput" class="text-xs text-slate-200 bg-black/40 border border-white/10 rounded-lg p-3 max-h-64 overflow-auto whitespace-pre-wrap"></pre>
+      </div>
+
       <div id="adminNotice" class="text-sm text-amber-300 hidden">Ви увійшли, але не маєте прав адміна (UID не у списку). Зверніться до власника проєкту.</div>
       <div id="adminNoFirebase" class="text-sm text-amber-300 hidden">Firebase config не заповнено. Адмін-режим вимкнено до додавання ключів.</div>
 
@@ -396,6 +407,7 @@
     const brokenUrls = new Set();
     const missingStorageRefs = new Set();
     const inFlightStorageUrls = new Map();
+    const resolvedStorageUrls = new Map();
     const state = {
       artistInfo: null,
       releases: [],
@@ -448,8 +460,70 @@
     const adminClose = document.getElementById('adminClose');
     const adminBadge = document.getElementById('adminBadge');
     const adminUserBadge = document.getElementById('adminUserBadge');
+    const storageDebugPanel = document.getElementById('storageDebugPanel');
+    const storageDebugOutput = document.getElementById('storageDebugOutput');
+    const storageDebugClear = document.getElementById('storageDebugClear');
     const toastContainer = document.getElementById('toastContainer');
     let adminPanelOpen = false;
+
+    const storageDebug = {
+      enabled: true,
+      maxEvents: 80,
+      events: [],
+      stats: new Map(),
+    };
+
+    function renderStorageDebug() {
+      if (!storageDebugOutput) return;
+      const top = Array.from(storageDebug.stats.entries())
+        .sort((a, b) => (b[1].calls || 0) - (a[1].calls || 0))
+        .slice(0, 8)
+        .map(([key, s]) => `${key}\n  calls=${s.calls} cache=${s.cache} inflight=${s.inflight} missing=${s.missing} resolved=${s.resolved} error=${s.error}\n  lastCtx=${s.lastCtx}`)
+        .join('\n\n');
+
+      const events = storageDebug.events.slice(-20).join('\n\n');
+      storageDebugOutput.textContent = [
+        'TOP (за calls):',
+        top || '(порожньо)',
+        '',
+        'ОСТАННІ ПОДІЇ:',
+        events || '(порожньо)',
+      ].join('\n');
+    }
+
+    function recordStorageDebug({ action, key, ctx, raw }) {
+      if (!storageDebug.enabled) return;
+      const safeCtx = ctx || '-';
+      const safeRaw = (typeof raw === 'string' ? raw : '') || '-';
+      const safeKey = key || '-';
+
+      const ts = new Date().toLocaleTimeString('uk-UA', { hour12: false });
+      const line = `${ts} [${action}] key=${safeKey}\n  ctx=${safeCtx}\n  raw=${safeRaw}`;
+      storageDebug.events.push(line);
+      if (storageDebug.events.length > storageDebug.maxEvents) storageDebug.events.splice(0, storageDebug.events.length - storageDebug.maxEvents);
+
+      if (safeKey !== '-') {
+        const current = storageDebug.stats.get(safeKey) || { calls: 0, cache: 0, inflight: 0, missing: 0, resolved: 0, error: 0, lastCtx: '-', lastRaw: '-' };
+        if (action === 'call') current.calls += 1;
+        else if (action === 'cache') current.cache += 1;
+        else if (action === 'inflight') current.inflight += 1;
+        else if (action === 'missing') current.missing += 1;
+        else if (action === 'resolved') current.resolved += 1;
+        else if (action === 'error') current.error += 1;
+        current.lastCtx = safeCtx;
+        current.lastRaw = safeRaw;
+        storageDebug.stats.set(safeKey, current);
+      }
+
+      if (adminPanelOpen) renderStorageDebug();
+    }
+
+    storageDebugClear?.addEventListener('click', () => {
+      storageDebug.events = [];
+      storageDebug.stats.clear();
+      renderStorageDebug();
+      showToast('Storage debug очищено', 'success');
+    });
 
     function openModal(html) {
       modalContent.innerHTML = html;
@@ -738,6 +812,54 @@
       return gsUrl.replace('firebasestorage.app', 'appspot.com');
     }
 
+    function normalizeStorageBucket(bucket) {
+      if (!bucket) return bucket;
+      return bucket.replace(/\.firebasestorage\.app$/i, '.appspot.com');
+    }
+
+    function normalizeStoragePath(path) {
+      if (!path) return path;
+      return path.replace(/^\/+/, '').replace(/\/+/g, '/');
+    }
+
+    function parseStorageRef(urlOrPath) {
+      if (!urlOrPath || typeof urlOrPath !== 'string') return null;
+
+      if (urlOrPath.startsWith('gs://')) {
+        const normalized = normalizeGsUrl(urlOrPath);
+        const match = normalized.match(/^gs:\/\/([^/]+)\/(.+)$/);
+        if (!match) return null;
+        const bucket = normalizeStorageBucket(match[1]);
+        const path = normalizeStoragePath(match[2]);
+        return bucket && path ? { bucket, path, gsUrl: `gs://${bucket}/${path}` } : null;
+      }
+
+      const apiPathRe = /https?:\/\/firebasestorage\.(?:googleapis\.com|app)\/v0\/b\/([^/]+)\/o\/([^?]+)(?:\?.*)?$/;
+      const apiNameRe = /https?:\/\/firebasestorage\.(?:googleapis\.com|app)\/v0\/b\/([^/]+)\/o\?name=([^&]+)(?:&.*)?$/;
+
+      let m = urlOrPath.match(apiPathRe);
+      if (m) {
+        const bucket = normalizeStorageBucket(m[1]);
+        const path = normalizeStoragePath(decodeURIComponent(m[2]));
+        return bucket && path ? { bucket, path, gsUrl: `gs://${bucket}/${path}` } : null;
+      }
+
+      m = urlOrPath.match(apiNameRe);
+      if (m) {
+        const bucket = normalizeStorageBucket(m[1]);
+        const path = normalizeStoragePath(decodeURIComponent(m[2]));
+        return bucket && path ? { bucket, path, gsUrl: `gs://${bucket}/${path}` } : null;
+      }
+
+      if (!urlOrPath.startsWith('http')) {
+        const bucket = normalizeStorageBucket(firebaseConfig.storageBucket);
+        const path = normalizeStoragePath(urlOrPath);
+        return bucket && path ? { bucket, path, gsUrl: `gs://${bucket}/${path}` } : null;
+      }
+
+      return null;
+    }
+
     function coerceToGs(urlOrPath) {
       if (!urlOrPath) return null;
       if (urlOrPath.startsWith('gs://')) return normalizeGsUrl(urlOrPath);
@@ -764,33 +886,52 @@
       return null;
     }
 
-    async function getDownloadUrlIfGs(storage, gsUrl) {
+    async function getDownloadUrlIfGs(storage, gsUrl, ctx) {
       if (!gsUrl || !storage) return gsUrl;
-      const candidate = gsUrl.startsWith('gs://') ? normalizeGsUrl(gsUrl) : coerceToGs(gsUrl);
-      if (!candidate) {
+      const parsed = parseStorageRef(gsUrl);
+      if (!parsed) {
         // Якщо це схоже на Firebase Storage API URL без токена — краще не рендерити напряму (щоб уникнути CORS/404)
         if (typeof gsUrl === 'string' && gsUrl.includes('firebasestorage.')) return null;
         return gsUrl;
       }
 
-      if (missingStorageRefs.has(candidate)) return null;
-      if (inFlightStorageUrls.has(candidate)) return await inFlightStorageUrls.get(candidate);
+      const key = `${parsed.bucket}/${parsed.path}`;
+
+      recordStorageDebug({ action: 'call', key, ctx, raw: gsUrl });
+
+      if (resolvedStorageUrls.has(key)) {
+        recordStorageDebug({ action: 'cache', key, ctx, raw: gsUrl });
+        return resolvedStorageUrls.get(key);
+      }
+      if (missingStorageRefs.has(key)) {
+        recordStorageDebug({ action: 'missing', key, ctx, raw: gsUrl });
+        return null;
+      }
+      if (inFlightStorageUrls.has(key)) {
+        recordStorageDebug({ action: 'inflight', key, ctx, raw: gsUrl });
+        return await inFlightStorageUrls.get(key);
+      }
 
       const promise = (async () => {
         try {
-          const ref = storage.refFromURL(candidate);
-          return await ref.getDownloadURL();
+          const ref = storage.refFromURL(parsed.gsUrl);
+          const url = await ref.getDownloadURL();
+          resolvedStorageUrls.set(key, url);
+          recordStorageDebug({ action: 'resolved', key, ctx, raw: gsUrl });
+          return url;
         } catch (e) {
-          console.warn('Не вдалось отримати URL', candidate, e);
+          console.warn('Не вдалось отримати URL', parsed.gsUrl, e);
           // Якщо файлу нема або доступ закритий — негативно кешуємо, щоб не сипати повторними запитами
-          missingStorageRefs.add(candidate);
+          missingStorageRefs.add(key);
+          resolvedStorageUrls.set(key, null);
+          recordStorageDebug({ action: 'error', key, ctx, raw: gsUrl });
           return null;
         } finally {
-          inFlightStorageUrls.delete(candidate);
+          inFlightStorageUrls.delete(key);
         }
       })();
 
-      inFlightStorageUrls.set(candidate, promise);
+      inFlightStorageUrls.set(key, promise);
       return await promise;
     }
 
@@ -802,6 +943,8 @@
       adminNoFirebase.classList.toggle('hidden', state.firebaseReady);
       if (adminBadge) adminBadge.textContent = `Статус: ${state.firebaseReady ? 'онлайн' : 'офлайн'}`;
       if (adminUserBadge) adminUserBadge.textContent = state.user ? `Користувач: ${state.user.email || state.user.uid}` : 'Користувач: -';
+      if (storageDebugPanel) storageDebugPanel.classList.toggle('hidden', !canSeePanel);
+      if (canSeePanel) renderStorageDebug();
       if (!state.firebaseReady) {
         adminStatus.textContent = 'Адмін-режим недоступний без Firebase config.';
         return;
@@ -1273,7 +1416,7 @@
           }
           const doc = snap.docs[0];
           const data = doc.data();
-          const heroImageUrl = data.hero_image_url || await getDownloadUrlIfGs(storage, data.hero_image);
+          const heroImageUrl = data.hero_image_url || await getDownloadUrlIfGs(storage, data.hero_image, `artist_info/${doc.id}.hero_image`);
           state.artistInfo = { id: doc.id, ...data, heroImageUrl };
           renderHero(state.artistInfo);
           renderContact(state.artistInfo);
@@ -1290,7 +1433,7 @@
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
-            const coverUrl = await getDownloadUrlIfGs(storage, data.cover_gs_url);
+            const coverUrl = await getDownloadUrlIfGs(storage, data.cover_gs_url, `releases/${doc.id}.cover_gs_url`);
             const embedHtml = data.platforms?.spotify
               ? `<iframe style="border-radius:12px" src="${data.platforms.spotify}" width="100%" height="352" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
               : '';
@@ -1311,7 +1454,7 @@
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
-            const thumbnail = await getDownloadUrlIfGs(storage, data.thumbnail_gs_url);
+            const thumbnail = await getDownloadUrlIfGs(storage, data.thumbnail_gs_url, `videos/${doc.id}.thumbnail_gs_url`);
             return { id: doc.id, title: data.title, youtubeId: data.youtubeId, thumbnail };
           }));
           state.videos = items;
@@ -1329,7 +1472,7 @@
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
-            const url = await getDownloadUrlIfGs(storage, data.image_gs_url);
+            const url = await getDownloadUrlIfGs(storage, data.image_gs_url, `photos/${doc.id}.image_gs_url`);
             return { id: doc.id, title: data.alt, alt: data.alt, url, category: data.category };
           }));
           state.photos = items;
@@ -1360,7 +1503,7 @@
           }
           snap.forEach(async (doc) => {
             const data = doc.data();
-            const logo = await getDownloadUrlIfGs(storage, data.logo);
+            const logo = await getDownloadUrlIfGs(storage, data.logo, `label/${doc.id}.logo`);
             state.label = { ...data, logo };
             renderLabel();
           });
@@ -1377,7 +1520,7 @@
           }
           const items = await Promise.all(snap.docs.map(async (doc) => {
             const data = doc.data();
-            const logo = await getDownloadUrlIfGs(storage, data.logo_gs_url);
+            const logo = await getDownloadUrlIfGs(storage, data.logo_gs_url, `partners/${doc.id}.logo_gs_url`);
             return { id: doc.id, name: data.name, url: data.url, logo };
           }));
           state.partners = items;
