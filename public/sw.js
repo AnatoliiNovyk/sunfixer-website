@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sunfixer-cache-v4';
+const CACHE_NAME = 'sunfixer-cache-v5';
 const ASSETS = [
   '/',
   '/index.html',

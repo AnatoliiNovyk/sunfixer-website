@@ -368,7 +368,7 @@
       apiKey: 'AIzaSyACU6TvulMH3rn1XSXRDvt1PubCr-KvGsI',
       authDomain: 'sunfixer-website.firebaseapp.com',
       projectId: 'sunfixer-website',
-      storageBucket: 'sunfixer-website.firebasestorage.app',
+      storageBucket: 'sunfixer-website.appspot.com',
       messagingSenderId: '182822430592',
       appId: '1:182822430592:web:0ff7f23d2391768b704365',
       measurementId: 'G-NGN6823WWH',
@@ -690,15 +690,29 @@
       renderContact(state.artistInfo);
     }
 
+    function normalizeGsUrl(gsUrl) {
+      if (!gsUrl || !gsUrl.startsWith('gs://')) return gsUrl;
+      // Деякі старі записи могли зберегтися з доменом firebasestorage.app — нормалізуємо до appspot.com
+      return gsUrl.replace('firebasestorage.app', 'appspot.com');
+    }
+
     async function getDownloadUrlIfGs(storage, gsUrl) {
       if (!gsUrl || !storage) return gsUrl;
       if (!gsUrl.startsWith('gs://')) return gsUrl;
+      const normalized = normalizeGsUrl(gsUrl);
       try {
-        const ref = storage.refFromURL(gsUrl);
+        const ref = storage.refFromURL(normalized);
         return await ref.getDownloadURL();
       } catch (e) {
-        console.warn('Не вдалось отримати URL', e);
-        return gsUrl;
+        console.warn('Не вдалось отримати URL', normalized, e);
+        // Фолбек у формат https://storage.googleapis.com/bucket/path
+        try {
+          const [, bucketAndPath] = normalized.split('gs://');
+          const [bucket, ...rest] = bucketAndPath.split('/');
+          const path = rest.join('/');
+          if (bucket && path) return `https://storage.googleapis.com/${bucket}/${path}`;
+        } catch (_) { /* ignore */ }
+        return normalized;
       }
     }
 
