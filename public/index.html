@@ -261,7 +261,8 @@
         </div>
         <div class="flex-1">
           <div class="relative glass rounded-2xl overflow-hidden border border-white/10 p-1">
-            <div class="aspect-[4/5] bg-gradient-to-br from-neonPurple/50 via-cyberBg to-neonCyan/50 flex items-center justify-center text-6xl font-display neon-text">SF</div>
+            <div id="heroImagePlaceholder" class="aspect-[4/5] bg-gradient-to-br from-neonPurple/50 via-cyberBg to-neonCyan/50 flex items-center justify-center text-6xl font-display neon-text">SF</div>
+            <img id="heroImage" alt="SUNFIXER hero" class="absolute inset-1 rounded-xl w-[calc(100%-0.5rem)] h-[calc(100%-0.5rem)] object-cover hidden opacity-0 transition-opacity duration-300" loading="lazy" />
             <div class="absolute inset-x-4 bottom-4 flex items-center justify-between text-xs text-slate-300">
               <span class="flex items-center gap-2"><i class="fa-solid fa-wave-square text-neonCyan"></i> Live energy</span>
               <span class="flex items-center gap-2"><i class="fa-solid fa-bolt text-acidGreen"></i> Bass impact</span>
@@ -392,6 +393,7 @@
 
     const modalRegistry = { release: {}, video: {}, photo: {} };
     const uploadQueue = {};
+    const brokenUrls = new Set();
     const state = {
       artistInfo: null,
       releases: [],
@@ -425,6 +427,8 @@
 
     const heroTitleEl = document.getElementById('heroTitle');
     const heroBioEl = document.getElementById('heroBio');
+    const heroImageEl = document.getElementById('heroImage');
+    const heroImagePlaceholder = document.getElementById('heroImagePlaceholder');
     const discographyGrid = document.getElementById('discographyGrid');
     const videosGrid = document.getElementById('videosGrid');
     const photosGrid = document.getElementById('photosGrid');
@@ -449,6 +453,16 @@
       modalContent.innerHTML = html;
       modalOverlay.classList.add('active');
     }
+
+    // Глобальний хендлер помилок IMG: якщо файл відсутній/блокується, ховаємо картинку і запам'ятовуємо URL, щоб не рендерити повторно
+    document.body.addEventListener('error', (e) => {
+      const target = e.target;
+      if (target.tagName === 'IMG' && target.src) {
+        brokenUrls.add(target.src);
+        target.removeAttribute('src');
+        target.classList.add('hidden');
+      }
+    }, true);
 
     function closeModal() {
       modalOverlay.classList.remove('active');
@@ -479,8 +493,11 @@
     function setLoading(formEl, isLoading) {
       const btn = formEl.querySelector('button[type="submit"]');
       if (!btn) return;
+      if (!btn.getAttribute('data-label')) {
+        btn.setAttribute('data-label', btn.textContent || 'Зберегти');
+      }
       btn.disabled = isLoading;
-      btn.textContent = isLoading ? 'Збереження...' : btn.getAttribute('data-label') || btn.textContent || 'Зберегти';
+      btn.textContent = isLoading ? 'Збереження...' : btn.getAttribute('data-label');
     }
 
     function registerModal(type, id, payload) {
@@ -517,9 +534,26 @@
     }
 
     function renderHero(info) {
-      if (!info) return;
-      heroTitleEl.textContent = info.tagline || 'SUNFIXER — Neurofunk Architect';
-      heroBioEl.textContent = info.bio || 'Shaping dark energy of sound';
+      const data = info || {};
+      heroTitleEl.textContent = data.tagline || 'SUNFIXER — Neurofunk Architect';
+      heroBioEl.textContent = data.bio || 'Shaping dark energy of sound';
+      const heroUrl = data.heroImageUrl || data.hero_image || null;
+      const showImg = heroUrl && !brokenUrls.has(heroUrl);
+      if (heroImageEl) {
+        if (showImg) {
+          heroImageEl.src = heroUrl;
+          heroImageEl.alt = data.tagline || 'SUNFIXER hero';
+          heroImageEl.classList.remove('hidden');
+          requestAnimationFrame(() => heroImageEl.classList.remove('opacity-0'));
+        } else {
+          heroImageEl.removeAttribute('src');
+          heroImageEl.classList.add('hidden');
+          heroImageEl.classList.add('opacity-0');
+        }
+      }
+      if (heroImagePlaceholder) {
+        heroImagePlaceholder.classList.toggle('hidden', !!showImg);
+      }
     }
 
     function renderReleases() {
@@ -596,7 +630,8 @@
         card.style.minHeight = '180px';
         card.setAttribute('data-modal-type', 'photo');
         card.setAttribute('data-modal-id', p.id);
-        card.innerHTML = `${p.url ? `<img src="${p.url}" alt="${p.alt ?? ''}" class="w-full h-full object-cover" loading="lazy" />` : ''}
+        const showImg = p.url && !brokenUrls.has(p.url);
+        card.innerHTML = `${showImg ? `<img src="${p.url}" alt="${p.alt ?? ''}" class="w-full h-full object-cover" loading="lazy" />` : ''}
           ${state.isAdmin ? `<button data-delete="photos" data-id="${p.id}" class="absolute top-2 right-2 text-xs bg-black/50 px-2 py-1 rounded text-rose-200">✕</button>` : ''}`;
         registerModal('photo', p.id, { title: p.alt, url: p.url });
         photosGrid.appendChild(card);
@@ -705,14 +740,8 @@
         return await ref.getDownloadURL();
       } catch (e) {
         console.warn('Не вдалось отримати URL', normalized, e);
-        // Фолбек у формат https://storage.googleapis.com/bucket/path
-        try {
-          const [, bucketAndPath] = normalized.split('gs://');
-          const [bucket, ...rest] = bucketAndPath.split('/');
-          const path = rest.join('/');
-          if (bucket && path) return `https://storage.googleapis.com/${bucket}/${path}`;
-        } catch (_) { /* ignore */ }
-        return normalized;
+        // Якщо файлу нема або доступ закритий — повертаємо null, щоб уникнути повторних 404/CORS
+        return null;
       }
     }
 
@@ -829,9 +858,11 @@
           return acc;
         }, {});
         let heroImageGs = null;
+        let heroImageUrl = null;
         if (uploadQueue.artistHero) {
           const upload = await uploadFromQueue('artistHero', 'artist');
           heroImageGs = upload.gsUrl;
+          heroImageUrl = upload.downloadURL;
         }
         const payload = {
           tagline: fd.get('tagline') || '',
@@ -841,6 +872,10 @@
         };
         if (heroImageGs) payload.hero_image = heroImageGs;
         await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
+        if (heroImageUrl) {
+          state.artistInfo = { ...(state.artistInfo || {}), ...payload, heroImageUrl };
+          renderHero(state.artistInfo);
+        }
         showToast('Artist info збережено', 'success');
       } catch (err) {
         console.error('Помилка збереження artist_info', err);
@@ -1048,27 +1083,26 @@
           setLoading(e.target, false);
           return;
         }
-        let image_gs_url = null;
-        let imageUrl = null;
+        let logo_gs_url = null;
+        let logoUrl = null;
         if (uploadQueue.partnerLogo) {
           const upload = await uploadFromQueue('partnerLogo', 'partners');
           logo_gs_url = upload.gsUrl;
-          imageUrl = upload.downloadURL;
+          logoUrl = upload.downloadURL;
         }
         const payload = {
           name: fd.get('name'),
           url: fd.get('url'),
           logo_gs_url,
         };
-        const docRef = await state.db.collection('photos').add(payload);
-        state.photos = [...state.photos, {
+        const docRef = await state.db.collection('partners').add(payload);
+        state.partners = [...state.partners, {
           id: docRef.id,
-          alt: payload.alt,
-          title: payload.alt,
-          category: payload.category,
-          url: imageUrl,
+          name: payload.name,
+          url: payload.url,
+          logo: logoUrl,
         }];
-        renderPhotos();
+        renderPartners();
         e.target.reset();
         showToast('Партнера додано', 'success');
         updatePreview('partnerLogo', null);
@@ -1180,15 +1214,19 @@
         updateAdminUI();
         setupAuth();
 
-        db.collection('artist_info').limit(1).onSnapshot((snap) => {
+        db.collection('artist_info').limit(1).onSnapshot(async (snap) => {
           if (snap.empty) {
-            return; // порожній стан без моків коли Firebase доступний
-          }
-          snap.forEach((doc) => {
-            state.artistInfo = { id: doc.id, ...doc.data() };
+            state.artistInfo = null;
             renderHero(state.artistInfo);
             renderContact(state.artistInfo);
-          });
+            return; // порожній стан без моків коли Firebase доступний
+          }
+          const doc = snap.docs[0];
+          const data = doc.data();
+          const heroImageUrl = await getDownloadUrlIfGs(storage, data.hero_image);
+          state.artistInfo = { id: doc.id, ...data, heroImageUrl };
+          renderHero(state.artistInfo);
+          renderContact(state.artistInfo);
         }, (err) => {
           console.warn('artist_info snapshot error', err);
           if (!state.firebaseReady && !state.usedMock) loadMockData();
@@ -1311,6 +1349,7 @@
         tagline: 'SUNFIXER — Neurofunk Architect',
         bio: 'Демо біо: кіберпанк саунд, важкий бас, темні ритми.',
         email: 'booking@sunfixer.pp.ua',
+        heroImageUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
         socials: {
           instagram: '#', youtube: '#', soundcloud: '#', spotify: '#',
         },
