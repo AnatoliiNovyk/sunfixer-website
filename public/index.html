@@ -394,6 +394,8 @@
     const modalRegistry = { release: {}, video: {}, photo: {} };
     const uploadQueue = {};
     const brokenUrls = new Set();
+    const missingStorageRefs = new Set();
+    const inFlightStorageUrls = new Map();
     const state = {
       artistInfo: null,
       releases: [],
@@ -461,6 +463,11 @@
         brokenUrls.add(target.src);
         target.removeAttribute('src');
         target.classList.add('hidden');
+
+        // Для hero — повертаємо градієнтний плейсхолдер
+        if (target.id === 'heroImage' && heroImagePlaceholder) {
+          heroImagePlaceholder.classList.remove('hidden');
+        }
       }
     }, true);
 
@@ -731,18 +738,60 @@
       return gsUrl.replace('firebasestorage.app', 'appspot.com');
     }
 
+    function coerceToGs(urlOrPath) {
+      if (!urlOrPath) return null;
+      if (urlOrPath.startsWith('gs://')) return normalizeGsUrl(urlOrPath);
+      const bucket = firebaseConfig.storageBucket;
+      const apiPathRe = /https?:\/\/firebasestorage\.(?:googleapis\.com|app)\/v0\/b\/([^/]+)\/o\/([^?]+)(?:\?.*)?$/;
+      const apiNameRe = /https?:\/\/firebasestorage\.(?:googleapis\.com|app)\/v0\/b\/([^/]+)\/o\?name=([^&]+)(?:&.*)?$/;
+
+      let m = urlOrPath.match(apiPathRe);
+      if (m) {
+        const decodedPath = decodeURIComponent(m[2]);
+        return `gs://${m[1]}/${decodedPath}`;
+      }
+
+      m = urlOrPath.match(apiNameRe);
+      if (m) {
+        const decodedPath = decodeURIComponent(m[2]);
+        return `gs://${m[1]}/${decodedPath}`;
+      }
+
+      if (!urlOrPath.startsWith('http') && bucket) {
+        const cleaned = urlOrPath.replace(/^\//, '');
+        return `gs://${bucket}/${cleaned}`;
+      }
+      return null;
+    }
+
     async function getDownloadUrlIfGs(storage, gsUrl) {
       if (!gsUrl || !storage) return gsUrl;
-      if (!gsUrl.startsWith('gs://')) return gsUrl;
-      const normalized = normalizeGsUrl(gsUrl);
-      try {
-        const ref = storage.refFromURL(normalized);
-        return await ref.getDownloadURL();
-      } catch (e) {
-        console.warn('Не вдалось отримати URL', normalized, e);
-        // Якщо файлу нема або доступ закритий — повертаємо null, щоб уникнути повторних 404/CORS
-        return null;
+      const candidate = gsUrl.startsWith('gs://') ? normalizeGsUrl(gsUrl) : coerceToGs(gsUrl);
+      if (!candidate) {
+        // Якщо це схоже на Firebase Storage API URL без токена — краще не рендерити напряму (щоб уникнути CORS/404)
+        if (typeof gsUrl === 'string' && gsUrl.includes('firebasestorage.')) return null;
+        return gsUrl;
       }
+
+      if (missingStorageRefs.has(candidate)) return null;
+      if (inFlightStorageUrls.has(candidate)) return await inFlightStorageUrls.get(candidate);
+
+      const promise = (async () => {
+        try {
+          const ref = storage.refFromURL(candidate);
+          return await ref.getDownloadURL();
+        } catch (e) {
+          console.warn('Не вдалось отримати URL', candidate, e);
+          // Якщо файлу нема або доступ закритий — негативно кешуємо, щоб не сипати повторними запитами
+          missingStorageRefs.add(candidate);
+          return null;
+        } finally {
+          inFlightStorageUrls.delete(candidate);
+        }
+      })();
+
+      inFlightStorageUrls.set(candidate, promise);
+      return await promise;
     }
 
     function updateAdminUI() {
@@ -871,6 +920,7 @@
           socials,
         };
         if (heroImageGs) payload.hero_image = heroImageGs;
+        if (heroImageUrl) payload.hero_image_url = heroImageUrl;
         await state.db.collection('artist_info').doc('main').set(payload, { merge: true });
         if (heroImageUrl) {
           state.artistInfo = { ...(state.artistInfo || {}), ...payload, heroImageUrl };
@@ -1223,7 +1273,7 @@
           }
           const doc = snap.docs[0];
           const data = doc.data();
-          const heroImageUrl = await getDownloadUrlIfGs(storage, data.hero_image);
+          const heroImageUrl = data.hero_image_url || await getDownloadUrlIfGs(storage, data.hero_image);
           state.artistInfo = { id: doc.id, ...data, heroImageUrl };
           renderHero(state.artistInfo);
           renderContact(state.artistInfo);
